@@ -2,14 +2,23 @@
 #include <ctime>
 #include <cstdlib>
 
-void gpu(cpu_shoal *, double);
+void checkCudaError() 
+{
+	cudaError_t cudaStatus = cudaGetLastError();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "Error: %s\n", cudaGetErrorString(cudaStatus));
+	}
+}
+
+void gpu(cpu_shoal*, double);
 
 glm::mat3* model;
 glm::vec2* positions;
 glm::vec2* velocities;
 glm::vec2* positions_bb;
 glm::vec2* velocities_bb;
-int* grid;
+int* grid_cells;
+int* grid_boids;
 
 int main()
 {
@@ -35,20 +44,22 @@ int main()
 
 	size_t mat_size = N * sizeof(glm::mat3);
 	size_t vec_size = N * sizeof(glm::vec2);
+	size_t int_size = N * sizeof(int);
 
 	cudaMalloc(&model, mat_size);
 	cudaMalloc(&positions, vec_size);
 	cudaMalloc(&velocities, vec_size);
 	cudaMalloc(&positions_bb, vec_size);
 	cudaMalloc(&velocities_bb, vec_size);
-	cudaMalloc(&grid, N * sizeof(int));
+	cudaMalloc(&grid_cells, int_size);
+	cudaMalloc(&grid_boids, int_size);
 
 #endif
 
 	double previousTime = glfwGetTime();
 	while (!glfwWindowShouldClose(window))
 	{
-		double currentTime = glfwGetTime(); 
+		double currentTime = glfwGetTime();
 		double deltaTime = currentTime - previousTime;
 		previousTime = currentTime;
 
@@ -58,7 +69,6 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glBindVertexArray(VAO);
-
 		glBindBuffer(GL_ARRAY_BUFFER, modelVBO);
 
 #ifdef CPU
@@ -74,27 +84,38 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-		//for (;;);
+		for (;;);
 	}
 
 	glfwTerminate();
-	
+
 	delete shoal;
 	cudaFree(model);
 	cudaFree(positions);
 	cudaFree(positions_bb);
 	cudaFree(velocities);
 	cudaFree(velocities_bb);
+	cudaFree(grid_cells);
+	cudaFree(grid_boids);
 
 	// tu powinno byc jakies zwalnianie cudy
 
 	return 0;
 }
 
-void gpu(cpu_shoal *shoal, double deltaTime)
+struct compare_by_x {
+	__host__ __device__
+		bool operator()(const glm::vec2& a, const glm::vec2& b) const {
+		return a.x < b.x;
+	}
+};
+
+void gpu(cpu_shoal* shoal, double deltaTime)
 {
+	// INITIALIZE ---------------------------------------------------------
 	size_t mat_size = N * sizeof(glm::mat3);
 	size_t vec_size = N * sizeof(glm::vec2);
+	size_t int_size = N * sizeof(int);
 
 	glm::mat3* host_model = (glm::mat3*)malloc(mat_size);
 
@@ -106,15 +127,33 @@ void gpu(cpu_shoal *shoal, double deltaTime)
 	const int max_threads = 1024;
 	int blocks_per_grid = (N + max_threads - 1) / max_threads;
 
+
+	// GRID ----------------------------------------------------------------
+	calculateGridKernel << <blocks_per_grid, max_threads >> > (
+		grid_cells, grid_boids, positions);
+
+	thrust::sort_by_key(thrust::device, grid_cells, grid_cells + N, grid_boids);
+
+	int* grid_cpu = (int*)malloc(int_size);
+	cudaMemcpy(grid_cpu, grid_cells, int_size, cudaMemcpyDeviceToHost);
+	int* grid_boids_cpu = (int*)malloc(int_size);
+	cudaMemcpy(grid_boids_cpu, grid_boids, int_size, cudaMemcpyDeviceToHost);
+
+	for (int i = 0; i < N; ++i)
+		std::cout << i << " " << grid_cpu[i] << ", " << grid_boids_cpu[i] << std::endl;
+
+
+	// POSITIONS & VELOCITIES -----------------------------------------------
 	calculateBoidsKernel << <blocks_per_grid, max_threads >> > (
 		positions, velocities,
-		positions_bb, velocities_bb, 
-		grid,
+		positions_bb, velocities_bb,
+		grid_cells, grid_boids,
 		deltaTime);
 
 	cudaMemcpy(positions, positions_bb, vec_size, cudaMemcpyDeviceToDevice);
 	cudaMemcpy(velocities, velocities_bb, vec_size, cudaMemcpyDeviceToDevice);
 
+	// MODEL MATRICES -------------------------------------------------------
 	calculateModelKernel << <blocks_per_grid, max_threads >> > (model, positions, velocities);
 
 	cudaMemcpy(shoal->positions, positions_bb, vec_size, cudaMemcpyDeviceToHost);
@@ -124,5 +163,6 @@ void gpu(cpu_shoal *shoal, double deltaTime)
 	glBufferData(GL_ARRAY_BUFFER, mat_size, host_model, GL_DYNAMIC_DRAW);
 
 	free(host_model);
-	
+	free(grid_boids_cpu);
+	free(grid_cpu);
 }

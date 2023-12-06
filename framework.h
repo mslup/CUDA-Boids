@@ -11,12 +11,15 @@
 #include <glm/glm.hpp>
 #define GLM_FORCE_CUDA
 
+#include <thrust/sort.h>
+#include <thrust/execution_policy.h>
+
 //#include <cuda_gl_interop.h>
 
-constexpr int N = 2000;
+constexpr int N = 100;
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 800;
-constexpr float R = 0.137f;
+constexpr float R = 0.2f;
 constexpr float GRID_R = 2 * R;
 constexpr float LEFT_WALL = -1;
 constexpr float DOWN_WALL = -1;

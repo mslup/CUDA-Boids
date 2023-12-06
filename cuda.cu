@@ -103,17 +103,29 @@ __device__ int calculate_grid_index(glm::vec2 pos)
 	return gridY * (int)glm::ceil(WORLD_WIDTH / GRID_R) + gridX;
 }
 
-__global__ void calculateBoidsKernel(
-	glm::vec2* pos, glm::vec2* vel, 
-	glm::vec2* pos_bb, glm::vec2* vel_bb, 
-	int* grid, double d)
+
+__global__ void calculateGridKernel(int* grid_cells, int* grid_boids, glm::vec2* pos)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 
 	if (i >= N)
 		return;
 
-	grid[i] = calculate_grid_index(pos[i]);
+	grid_cells[i] = calculate_grid_index(pos[i]);
+	grid_boids[i] = i;
+
+	//printf("GPU says %d, %d\n", grid_cells[i], grid_boids[i]);
+}
+
+__global__ void calculateBoidsKernel(
+	glm::vec2* pos, glm::vec2* vel, 
+	glm::vec2* pos_bb, glm::vec2* vel_bb, 
+	int* grid_cells, int* grid_boids, double d)
+{
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if (i >= N)
+		return;
 
 	/*glm::vec2 new_vel;
 
@@ -127,8 +139,8 @@ __global__ void calculateBoidsKernel(
 		
 	pos_bb[i] = new_pos;*/
 
-	int gridX = grid[i] % (int)glm::ceil(WORLD_WIDTH / GRID_R);
-	int gridY = grid[i] / (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	int gridX = grid_cells[i] % (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	int gridY = grid_cells[i] / (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	pos_bb[i] = glm::vec2(LEFT_WALL + GRID_R * gridX, 
 		DOWN_WALL + GRID_R * gridY);
 
