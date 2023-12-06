@@ -85,10 +85,65 @@ Error:
 	return cudaStatus;
 }
 
-__global__ void kernel_tmp(glm::mat3* models, glm::vec2* pos, glm::vec2* vel)
+__device__ glm::vec2 apply_boid_rules(glm::vec2* pos, glm::vec2* vel, int i, double d)
+{
+	return glm::vec2(0, d);
+
+	float visibility_radius = 1e-1;
+	float s = 0.01;//3e-2;
+	float a = 0.1;//8e-2;
+	float c = 0.01;//9e-2;
+
+	glm::vec2 separation_component(0, 0);
+	glm::vec2 velocity_sum(0, 0);
+	glm::vec2 position_sum(0, 0);
+	int neighbors = 0;
+
+	for (int j = 0; j < N; ++j)
+	{
+		float len = glm::length(pos[i] - pos[j]);
+		if (i != j && len < visibility_radius)
+		{
+			separation_component += pos[i] - pos[j];
+			velocity_sum += vel[j];
+			position_sum += pos[j];
+
+			neighbors++;
+		}
+	}
+
+	glm::vec2 alignment_component;
+	glm::vec2 cohesion_component;
+
+	if (neighbors == 0)
+		return glm::vec2(0, 0);
+
+	velocity_sum /= neighbors;
+	position_sum /= neighbors;
+	alignment_component = velocity_sum - vel[i];
+	cohesion_component = position_sum - pos[i];
+
+	return glm::vec2(0, d);//(float)d* (s * separation_component + a * alignment_component + c * cohesion_component);
+}
+
+__global__ void calculateBoidsKernel(glm::vec2* pos,
+	glm::vec2* vel, glm::vec2* pos_bb, glm::vec2* vel_bb, double d)
 {
 	int i = threadIdx.x;
 
+	//vel[i] += apply_boid_rules(pos, vel, i, d);
+	pos[i] += (float)d * vel[i];
+
+	pos_bb[i] = pos[i];
+	vel_bb[i] = vel[i];
+
+}
+
+__global__ void calculateModelKernel(glm::mat3* models, glm::vec2* pos, glm::vec2* vel)
+{
+	int i = threadIdx.x;
+
+	// calculate model matrix
 	glm::vec2 v = glm::normalize(vel[i]);
 	glm::vec2 vT = glm::vec2(v.y, -v.x);
 	models[i] = glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(pos[i], 1.0f));

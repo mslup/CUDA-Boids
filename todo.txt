@@ -2,3 +2,6 @@
 - imgui
 - cuda opengl interop
 - refactor 
+- fps
+- grid
+- shared memory??
