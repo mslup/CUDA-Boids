@@ -55,6 +55,8 @@ int main()
 
 		cudaMemcpy(positions, shoal->positions, vec_size, cudaMemcpyHostToDevice);
 		cudaMemcpy(velocities, shoal->velocities, vec_size, cudaMemcpyHostToDevice);
+		cudaMemcpy(positions_bb, positions, vec_size, cudaMemcpyDeviceToDevice);
+		cudaMemcpy(velocities_bb, velocities, vec_size, cudaMemcpyDeviceToDevice);
 
 		calculateBoidsKernel << <1, N >> > (positions, velocities, 
 			positions_bb, velocities_bb, deltaTime);

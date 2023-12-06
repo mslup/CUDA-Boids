@@ -2,7 +2,9 @@
 
 cpu_shoal::cpu_shoal()
 	: height{ 0.04f }, width{ 0.02f }, 
-	vertices{ height / 2, 0, -height / 2, -width / 2, -height / 2, width / 2 }
+	vertices{ height / 2, 0, 
+			 -height / 2, -width / 2, 
+			 -height / 2, width / 2 }
 {
 	s = 0.01;//3e-2;
 	a = 0.1;//8e-2;
@@ -15,11 +17,6 @@ cpu_shoal::cpu_shoal()
 	min_speed = 9e-3;
 
 	visibility_radius = 1e-1;
-
-	/*glm::vec2 center(0, 0);
-	vertices[0] = center.x + height / 2, center.y;
-	vertices[1] = center.x - height / 2, center.y - width / 2;
-	vertices[2] = center.x - height / 2, center.y + width / 2;*/
 
 	init_positions();
 	init_velocities();
@@ -46,7 +43,9 @@ void cpu_shoal::init_velocities()
 	{
 		velocities[i].x = ((float)(rand()) / (float)(RAND_MAX)-0.5);
 		velocities[i].y = ((float)(rand()) / (float)(RAND_MAX)-0.5);
+		std::cout << glm::length(velocities[i]) << std::endl;
 	}
+
 
 	std::memcpy(velocities_bb, velocities, N * sizeof(glm::vec2));
 }

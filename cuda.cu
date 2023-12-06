@@ -87,8 +87,6 @@ Error:
 
 __device__ glm::vec2 apply_boid_rules(glm::vec2* pos, glm::vec2* vel, int i, double d)
 {
-	return glm::vec2(0, d);
-
 	float visibility_radius = 1e-1;
 	float s = 0.01;//3e-2;
 	float a = 0.1;//8e-2;
@@ -123,7 +121,46 @@ __device__ glm::vec2 apply_boid_rules(glm::vec2* pos, glm::vec2* vel, int i, dou
 	alignment_component = velocity_sum - vel[i];
 	cohesion_component = position_sum - pos[i];
 
-	return glm::vec2(0, d);//(float)d* (s * separation_component + a * alignment_component + c * cohesion_component);
+	return (float)d* (s * separation_component + a * alignment_component + c * cohesion_component);
+}
+
+__device__ glm::vec2 speed_limit(glm::vec2 vel)
+{
+	float max_speed = 0.9;
+	float min_speed = 0.1;
+
+	if (glm::length(vel) < min_speed)
+		return min_speed * glm::normalize(vel);
+	if (glm::length(vel) > max_speed)
+		return max_speed * glm::normalize(vel);
+
+	return vel;
+}
+
+__device__ glm::vec2 turn_from_wall(glm::vec2 pos, glm::vec2 vel)
+{
+	float margin = 0.2f;
+	float turn = 5e-3;
+
+	float dx_right = 1 - pos.x;
+	float dx_left = pos.x + 1;
+	float dy_up = 1 - pos.y;
+	float dy_down = pos.y + 1;
+
+	float len = glm::length(vel);
+
+	glm::vec2 vel_change = glm::vec2(0, 0);
+
+	if (dx_right < margin)
+		vel_change.x -= turn * len / (dx_right * dx_right);
+	if (dx_left < margin)
+		vel_change.x += turn * len / (dx_left * dx_left);
+	if (dy_up < margin)
+		vel_change.y -= turn * len / (dy_up * dy_up);
+	if (dy_down < margin)
+		vel_change.y += turn * len / (dy_down * dy_down);
+
+	return vel + vel_change;
 }
 
 __global__ void calculateBoidsKernel(glm::vec2* pos,
@@ -131,12 +168,14 @@ __global__ void calculateBoidsKernel(glm::vec2* pos,
 {
 	int i = threadIdx.x;
 
-	vel_bb[i] = vel[i];
-	pos_bb[i] = pos[i];
+	glm::vec2 new_vel;
 
-	vel_bb[i] = vel[i];
-	pos_bb[i] += (float)d * vel_bb[i];
+	new_vel = vel[i] + apply_boid_rules(pos, vel, i, 1);
+	new_vel = speed_limit(new_vel);
+	new_vel = turn_from_wall(pos[i], new_vel);
 
+	vel_bb[i] = new_vel;
+	pos_bb[i] += (float)d * new_vel;
 }
 
 __global__ void calculateModelKernel(glm::mat3* models, glm::vec2* pos, glm::vec2* vel)
