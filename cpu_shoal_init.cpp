@@ -30,8 +30,8 @@ void cpu_shoal::init_positions()
 {
 	for (int i = 0; i < N; i++)
 	{
-		positions[i].x = (float)(rand()) / (float)(RAND_MAX)-0.5;
-		positions[i].y = (float)(rand()) / (float)(RAND_MAX)-0.5;
+		positions[i].x = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
+		positions[i].y = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
 	}
 
 	std::memcpy(positions_bb, positions, N * sizeof(glm::vec2));
@@ -43,9 +43,7 @@ void cpu_shoal::init_velocities()
 	{
 		velocities[i].x = ((float)(rand()) / (float)(RAND_MAX)-0.5);
 		velocities[i].y = ((float)(rand()) / (float)(RAND_MAX)-0.5);
-		std::cout << glm::length(velocities[i]) << std::endl;
 	}
-
 
 	std::memcpy(velocities_bb, velocities, N * sizeof(glm::vec2));
 }

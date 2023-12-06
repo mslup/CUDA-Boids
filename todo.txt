@@ -7,3 +7,5 @@
 - shared memory??
 - deltatime w pozycji czy w welocycji?
 - malloc before loop
+- niech sie nie sklejaja debile
+- pause

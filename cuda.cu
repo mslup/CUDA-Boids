@@ -1,89 +1,5 @@
 #include "framework.h"
-
-__global__ void kernel(int* c, const int* a, const int* b)
-{
-	int i = threadIdx.x;
-	c[i] = a[i] + b[i];
-}
-
-cudaError_t deployCuda(int* c, const int* a, const int* b, unsigned int size)
-{
-	int* dev_a = 0;
-	int* dev_b = 0;
-	int* dev_c = 0;
-	cudaError_t cudaStatus;
-
-	// Choose which GPU to run on, change this on a multi-GPU system.
-	cudaStatus = cudaSetDevice(0);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
-		goto Error;
-	}
-
-	// Allocate GPU buffers for three vectors (two input, one output)    .
-	cudaStatus = cudaMalloc((void**)&dev_c, size * sizeof(int));
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed!");
-		goto Error;
-	}
-
-	cudaStatus = cudaMalloc((void**)&dev_a, size * sizeof(int));
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed!");
-		goto Error;
-	}
-
-	cudaStatus = cudaMalloc((void**)&dev_b, size * sizeof(int));
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed!");
-		goto Error;
-	}
-
-	// Copy input vectors from host memory to GPU buffers.
-	cudaStatus = cudaMemcpy(dev_a, a, size * sizeof(int), cudaMemcpyHostToDevice);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMemcpy failed!");
-		goto Error;
-	}
-
-	cudaStatus = cudaMemcpy(dev_b, b, size * sizeof(int), cudaMemcpyHostToDevice);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMemcpy failed!");
-		goto Error;
-	}
-
-	// Launch a kernel on the GPU with one thread for each element.
-	kernel << <1, size >> > (dev_c, dev_a, dev_b);
-
-	// Check for any errors launching the kernel
-	cudaStatus = cudaGetLastError();
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "addKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
-		goto Error;
-	}
-
-	// cudaDeviceSynchronize waits for the kernel to finish, and returns
-	// any errors encountered during the launch.
-	cudaStatus = cudaDeviceSynchronize();
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
-		goto Error;
-	}
-
-	// Copy output vector from GPU buffer to host memory.
-	cudaStatus = cudaMemcpy(c, dev_c, size * sizeof(int), cudaMemcpyDeviceToHost);
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMemcpy failed!");
-		goto Error;
-	}
-
-Error:
-	cudaFree(dev_c);
-	cudaFree(dev_a);
-	cudaFree(dev_b);
-
-	return cudaStatus;
-}
+#include <stdio.h>
 
 __device__ glm::vec2 apply_boid_rules(glm::vec2* pos, glm::vec2* vel, int i, double d)
 {
@@ -179,12 +95,27 @@ __device__ glm::vec2 teleport_through_wall(glm::vec2 pos)
 	return ret;
 }
 
-__global__ void calculateBoidsKernel(glm::vec2* pos,
-	glm::vec2* vel, glm::vec2* pos_bb, glm::vec2* vel_bb, double d)
+__device__ int calculate_grid_index(glm::vec2 pos)
 {
-	int i = threadIdx.x;
+	int gridX = (int)glm::floor((pos.x - LEFT_WALL) / GRID_R);
+	int gridY = (int)glm::floor((pos.y - DOWN_WALL) / GRID_R);
 
-	glm::vec2 new_vel;
+	return gridY * (int)glm::ceil(WORLD_WIDTH / GRID_R) + gridX;
+}
+
+__global__ void calculateBoidsKernel(
+	glm::vec2* pos, glm::vec2* vel, 
+	glm::vec2* pos_bb, glm::vec2* vel_bb, 
+	int* grid, double d)
+{
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if (i >= N)
+		return;
+
+	grid[i] = calculate_grid_index(pos[i]);
+
+	/*glm::vec2 new_vel;
 
 	new_vel = vel[i] + apply_boid_rules(pos, vel, i, 1);
 	new_vel = speed_limit(new_vel);
@@ -194,12 +125,22 @@ __global__ void calculateBoidsKernel(glm::vec2* pos,
 	glm::vec2 new_pos = pos[i] + (float)d * new_vel;
 	new_pos = teleport_through_wall(new_pos);
 		
-	pos_bb[i] = new_pos;
+	pos_bb[i] = new_pos;*/
+
+	int gridX = grid[i] % (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	int gridY = grid[i] / (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	pos_bb[i] = glm::vec2(LEFT_WALL + GRID_R * gridX, 
+		DOWN_WALL + GRID_R * gridY);
+
+	//syncthreads instead of two kernels
 }
 
 __global__ void calculateModelKernel(glm::mat3* models, glm::vec2* pos, glm::vec2* vel)
 {
-	int i = threadIdx.x;
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if (i >= N)
+		return;
 
 	// calculate model matrix
 	glm::vec2 v = glm::normalize(vel[i]);
