@@ -21,7 +21,7 @@ public:
 
 	glm::mat3 calculate_rotate(glm::vec2 pos, glm::vec2 vel);
 
-	void update_boids();
+	void update_boids(double d);
 	void calculate_all_models();
 
 private:

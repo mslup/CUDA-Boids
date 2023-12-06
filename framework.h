@@ -4,9 +4,10 @@
 #include "device_launch_parameters.h"
 
 #include <stdio.h>
+#include <iostream>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <iostream>
 
 #include <glm/glm.hpp>
 #define GLM_FORCE_CUDA
@@ -16,7 +17,11 @@
 
 //#include <cuda_gl_interop.h>
 
-constexpr int N = 2000;
+#include "ImGUI/imgui.h"
+#include "ImGUI/imgui_impl_glfw.h"
+#include "ImGUI/imgui_impl_opengl3.h"
+
+constexpr int N = 100;
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 800;
 constexpr float R = 0.25f;
@@ -30,4 +35,4 @@ constexpr float WORLD_WIDTH = 1 - LEFT_WALL;
 #include "display.hpp"
 #include "cuda.cuh"
 
-//#define CPU 
+#define CPU 
