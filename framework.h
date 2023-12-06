@@ -35,4 +35,4 @@ constexpr float WORLD_WIDTH = 1 - LEFT_WALL;
 #include "display.hpp"
 #include "cuda.cuh"
 
-#define CPU 
+//#define CPU 

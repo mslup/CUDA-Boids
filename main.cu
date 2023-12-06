@@ -58,8 +58,13 @@ int main()
 	cudaMalloc(&grid_starts, int_size);
 	cudaMalloc(&grid_cellsizes, int_size);
 #endif
+	
+	glfwSwapInterval(0);
 
+	int num_frames = 0;
+	int fps = 0;
 	double previousTime = glfwGetTime();
+	double previousFpsTime = previousTime;
 	while (!glfwWindowShouldClose(window))
 	{
 		double currentTime = glfwGetTime();
@@ -79,7 +84,16 @@ int main()
 		ImGui::SliderFloat("min_speed", &shoal->min_speed, 0.0f, 0.5f);
 		ImGui::SliderFloat("visbility_radius", &shoal->visibility_radius, 0.0f, 0.5f);
 
-
+		num_frames++;
+		if (currentTime - previousFpsTime >= 1.0) 
+		{ 
+			// printf and reset timer
+			//printf("%d fps\n", num_frames);
+			fps = num_frames;
+			num_frames = 0;
+			previousFpsTime += 1.0; 
+		}
+		ImGui::Text("%d fps", fps);
 
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -122,7 +136,7 @@ int main()
 	cudaFree(grid_starts);
 	cudaFree(grid_cellsizes);
 
-	// tu powinno byc jakies zwalnianie cudy
+	//TODO: tu powinno byc jakies zwalnianie cudy
 
 	return 0;
 }
@@ -156,7 +170,6 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	calculateGridKernel << <blocks_per_grid, max_threads >> > (
 		grid_cells, grid_boids, positions);
 
-	/*
 	thrust::sort_by_key(thrust::device, grid_cells, grid_cells + N, grid_boids);
 
 	int* grid_cpu = (int*)malloc(int_size);
@@ -164,16 +177,16 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	int* grid_boids_cpu = (int*)malloc(int_size);
 	cudaMemcpy(grid_boids_cpu, grid_boids, int_size, cudaMemcpyDeviceToHost);
 
-	for (int i = 0; i < N; ++i)
-		std::cout << i << " " << grid_cpu[i] << ", " << grid_boids_cpu[i] << std::endl;
+	//for (int i = 0; i < N; ++i)
+	//	std::cout << i << " " << grid_cpu[i] << ", " << grid_boids_cpu[i] << std::endl;
 
-	//  do this on gpu
+	//TODO: do this on gpu
 	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	size_t size = density * density;
 	size_t num_bytes = size * sizeof(int);
 
-	int* starts = (int*)malloc(num_bytes);
-	int* sizes = (int*)malloc(num_bytes);
+	int* starts = new int[size]; //(int*)malloc(num_bytes);
+	int* sizes = new int[size]; //(int*)malloc(num_bytes);
 	std::memset(starts, -1, num_bytes);
 	std::memset(sizes, -1, num_bytes);
 
@@ -182,13 +195,13 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	int len = 1;
 	int i = 0;
 
-	while (i < size) 
+	while (i < N) 
 	{
 		int current_cell = grid_cpu[i];
 		int start_index = i;
 		int len = 1;  
 
-		while (i + 1 < size && grid_cpu[i] == grid_cpu[i + 1]) {
+		while (i + 1 < N && grid_cpu[i] == grid_cpu[i + 1]) {
 			len++;
 			i++;
 		}
@@ -196,7 +209,7 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 		sizes[current_cell] = len;
 		starts[current_cell] = start_index;
 
-		std::cout << i << " " << starts[i] << std::endl;
+		//std::cout << current_cell << ": " << starts[current_cell] << " " << sizes[current_cell] << std::endl;
 		i++;
 	}
 	
@@ -205,13 +218,13 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 
 	free(grid_boids_cpu);
 	free(grid_cpu);
-	free(starts);
-	free(sizes);
+	delete[] starts; //free(starts);
+	delete[] sizes; //free(sizes);
 
-	*/
+	
 
 	// POSITIONS & VELOCITIES -----------------------------------------------
-	calculateBoidsKernel << <blocks_per_grid, max_threads >> > (
+	calculateBoidsKernel <<<blocks_per_grid, max_threads>>> (
 		positions, velocities,
 		positions_bb, velocities_bb,
 		grid_cells, grid_boids,

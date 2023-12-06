@@ -6,7 +6,7 @@ __device__ glm::vec2 apply_boid_rules(glm::vec2* pos, glm::vec2* vel, int i, dou
 	float visibility_radius = 1e-1;
 	float s = 0.01;//3e-2;
 	float a = 0.1;//8e-2;
-	float c = 0.01;//9e-2;
+	float c = 0.005;//9e-2;
 
 	glm::vec2 separation_component(0, 0);
 	glm::vec2 velocity_sum(0, 0);
@@ -100,7 +100,11 @@ __device__ int calculate_grid_index(glm::vec2 pos)
 	int gridX = (int)glm::floor((pos.x - LEFT_WALL) / GRID_R);
 	int gridY = (int)glm::floor((pos.y - DOWN_WALL) / GRID_R);
 
-	return gridY * (int)glm::ceil(WORLD_WIDTH / GRID_R) + gridX;
+	int gridSize = (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	gridX = glm::clamp(gridX, 0, gridSize - 1);
+	gridY = glm::clamp(gridY, 0, gridSize - 1);
+
+	return gridY * gridSize + gridX;
 }
 
 
@@ -137,12 +141,12 @@ __global__ void calculateBoidsKernel(
 		
 	pos_bb[i] = new_pos;
 
-	/*
-	int gridX = grid_cells[i] % (int)glm::ceil(WORLD_WIDTH / GRID_R);
-	int gridY = grid_cells[i] / (int)glm::ceil(WORLD_WIDTH / GRID_R);
-	pos_bb[i] = glm::vec2(LEFT_WALL + GRID_R * gridX, 
-		DOWN_WALL + GRID_R * gridY);
-	*/
+	
+	//int gridX = grid_cells[i] % (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	//int gridY = grid_cells[i] / (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	//pos_bb[i] = glm::vec2(LEFT_WALL + GRID_R * gridX, 
+	//	DOWN_WALL + GRID_R * gridY);
+	
 
 	//syncthreads instead of two kernels
 }
