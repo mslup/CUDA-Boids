@@ -7,14 +7,14 @@ glm::mat3 cpu_shoal::calculate_rotate(glm::vec2 pos, glm::vec2 vel)
 	return glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(pos, 1.0f));
 }
 
-void cpu_shoal::update_boids()
+void cpu_shoal::update_boids(double d)
 {
 	for (int i = 0; i < N; ++i)
 	{
 		apply_boid_rules(i);
 		turn_from_wall(i);
 		speed_limit(i);
-		positions_bb[i] += velocities_bb[i];
+		positions_bb[i] += (float)d * velocities_bb[i];
 		teleport_through_wall(i);
 
 		model[i] = calculate_rotate(positions_bb[i], velocities_bb[i]);

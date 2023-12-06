@@ -53,6 +53,15 @@ GLFWwindow* initWindow()
 	glViewport(0, 0, WIDTH, HEIGHT);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+	// Setup Platform/Renderer backends
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init();
+
 	return window;
 }
 
@@ -86,48 +95,48 @@ void create_buffer_objects(cpu_shoal* shoal)
 
 void render(cpu_shoal *shoal)
 {
-	Shader shader("./vertex.glsl", "./fragment.glsl");
-	shader.use();
-	shader.setFloat3("boidColor", 0.9f, 0.5f, 0.0f);
-
-	while (!glfwWindowShouldClose(window))
-	{
-		processInput(window);
-
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		glBindVertexArray(VAO);
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, N);
-
-		glBindBuffer(GL_ARRAY_BUFFER, modelVBO);
-
-#ifdef GPU
-		//glm::mat3* model;
-		//cudaMalloc(&model, N * sizeof(glm::mat3));
-
-		//kernel_tmp << <1, N >> > (model);
-
-		//size_t size = N * sizeof(glm::mat3);
-		//glm::mat3* host_model = (glm::mat3*)malloc(size);
-
-		//cudaMemcpy(host_model, model, size, cudaMemcpyHostToDevice);
-		//glBufferData(GL_ARRAY_BUFFER, size, host_model, GL_DYNAMIC_DRAW);
-
-		//free(host_model);
-		//cudaFree(model);
-#else
-		shoal->update_boids();
-		glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->model), &(shoal->model)[0], GL_DYNAMIC_DRAW);
-#endif
-
-		showError();
-
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
-
-	glfwTerminate();
+//	Shader shader("./vertex.glsl", "./fragment.glsl");
+//	shader.use();
+//	shader.setFloat3("boidColor", 0.9f, 0.5f, 0.0f);
+//
+//	while (!glfwWindowShouldClose(window))
+//	{
+//		processInput(window);
+//
+//		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+//		glClear(GL_COLOR_BUFFER_BIT);
+//
+//		glBindVertexArray(VAO);
+//		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, N);
+//
+//		glBindBuffer(GL_ARRAY_BUFFER, modelVBO);
+//
+//#ifdef GPU
+//		//glm::mat3* model;
+//		//cudaMalloc(&model, N * sizeof(glm::mat3));
+//
+//		//kernel_tmp << <1, N >> > (model);
+//
+//		//size_t size = N * sizeof(glm::mat3);
+//		//glm::mat3* host_model = (glm::mat3*)malloc(size);
+//
+//		//cudaMemcpy(host_model, model, size, cudaMemcpyHostToDevice);
+//		//glBufferData(GL_ARRAY_BUFFER, size, host_model, GL_DYNAMIC_DRAW);
+//
+//		//free(host_model);
+//		//cudaFree(model);
+//#else
+//		shoal->update_boids(d);
+//		glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->model), &(shoal->model)[0], GL_DYNAMIC_DRAW);
+//#endif
+//
+//		showError();
+//
+//		glfwSwapBuffers(window);
+//		glfwPollEvents();
+//	}
+//
+//	glfwTerminate();
 }
 
 //__global__ void kernel_tmp(glm::mat3* models)

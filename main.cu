@@ -30,8 +30,8 @@ int main()
 #endif
 
 	//srand(time(NULL));
-
 	initWindow();
+
 	cpu_shoal* shoal = new cpu_shoal();
 
 	create_buffer_objects(shoal);
@@ -57,7 +57,6 @@ int main()
 	cudaMalloc(&grid_boids, int_size);
 	cudaMalloc(&grid_starts, int_size);
 	cudaMalloc(&grid_cellsizes, int_size);
-
 #endif
 
 	double previousTime = glfwGetTime();
@@ -69,6 +68,19 @@ int main()
 
 		processInput(window);
 
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ImGui::SliderFloat("cohesion", &shoal->c, 0.0f, 0.5f);
+		ImGui::SliderFloat("separation", &shoal->s, 0.0f, 0.5f);
+		ImGui::SliderFloat("alignment", &shoal->a, 0.0f, 0.5f);
+		ImGui::SliderFloat("max_speed", &shoal->max_speed, 0.5f, 1.0f);
+		ImGui::SliderFloat("min_speed", &shoal->min_speed, 0.0f, 0.5f);
+		ImGui::SliderFloat("visbility_radius", &shoal->visibility_radius, 0.0f, 0.5f);
+
+
+
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -76,7 +88,7 @@ int main()
 		glBindBuffer(GL_ARRAY_BUFFER, modelVBO);
 
 #ifdef CPU
-		shoal->update_boids();
+		shoal->update_boids(deltaTime);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->model), &(shoal->model)[0], GL_DYNAMIC_DRAW);
 #else
 		gpu(shoal, deltaTime);
@@ -85,12 +97,18 @@ int main()
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, N);
 		showError();
 
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
 		//for (;;);
 	}
 
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 	glfwTerminate();
 
 	delete shoal;
