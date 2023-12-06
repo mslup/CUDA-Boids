@@ -19,6 +19,8 @@ glm::vec2* positions_bb;
 glm::vec2* velocities_bb;
 int* grid_cells;
 int* grid_boids;
+int* grid_starts;
+int* grid_cellsizes;
 
 int main()
 {
@@ -53,6 +55,8 @@ int main()
 	cudaMalloc(&velocities_bb, vec_size);
 	cudaMalloc(&grid_cells, int_size);
 	cudaMalloc(&grid_boids, int_size);
+	cudaMalloc(&grid_starts, int_size);
+	cudaMalloc(&grid_cellsizes, int_size);
 
 #endif
 
@@ -84,7 +88,7 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-		for (;;);
+		//for (;;);
 	}
 
 	glfwTerminate();
@@ -97,6 +101,8 @@ int main()
 	cudaFree(velocities_bb);
 	cudaFree(grid_cells);
 	cudaFree(grid_boids);
+	cudaFree(grid_starts);
+	cudaFree(grid_cellsizes);
 
 	// tu powinno byc jakies zwalnianie cudy
 
@@ -132,6 +138,7 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	calculateGridKernel << <blocks_per_grid, max_threads >> > (
 		grid_cells, grid_boids, positions);
 
+	/*
 	thrust::sort_by_key(thrust::device, grid_cells, grid_cells + N, grid_boids);
 
 	int* grid_cpu = (int*)malloc(int_size);
@@ -142,6 +149,48 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	for (int i = 0; i < N; ++i)
 		std::cout << i << " " << grid_cpu[i] << ", " << grid_boids_cpu[i] << std::endl;
 
+	//  do this on gpu
+	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	size_t size = density * density;
+	size_t num_bytes = size * sizeof(int);
+
+	int* starts = (int*)malloc(num_bytes);
+	int* sizes = (int*)malloc(num_bytes);
+	std::memset(starts, -1, num_bytes);
+	std::memset(sizes, -1, num_bytes);
+
+	int start_index = 0;
+	int current_cell = 0;
+	int len = 1;
+	int i = 0;
+
+	while (i < size) 
+	{
+		int current_cell = grid_cpu[i];
+		int start_index = i;
+		int len = 1;  
+
+		while (i + 1 < size && grid_cpu[i] == grid_cpu[i + 1]) {
+			len++;
+			i++;
+		}
+
+		sizes[current_cell] = len;
+		starts[current_cell] = start_index;
+
+		std::cout << i << " " << starts[i] << std::endl;
+		i++;
+	}
+	
+	cudaMemcpy(grid_starts, starts, num_bytes, cudaMemcpyHostToDevice);
+	cudaMemcpy(grid_cellsizes, sizes, num_bytes, cudaMemcpyHostToDevice);
+
+	free(grid_boids_cpu);
+	free(grid_cpu);
+	free(starts);
+	free(sizes);
+
+	*/
 
 	// POSITIONS & VELOCITIES -----------------------------------------------
 	calculateBoidsKernel << <blocks_per_grid, max_threads >> > (
@@ -163,6 +212,4 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	glBufferData(GL_ARRAY_BUFFER, mat_size, host_model, GL_DYNAMIC_DRAW);
 
 	free(host_model);
-	free(grid_boids_cpu);
-	free(grid_cpu);
 }

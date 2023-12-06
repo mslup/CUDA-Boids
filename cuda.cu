@@ -113,8 +113,6 @@ __global__ void calculateGridKernel(int* grid_cells, int* grid_boids, glm::vec2*
 
 	grid_cells[i] = calculate_grid_index(pos[i]);
 	grid_boids[i] = i;
-
-	//printf("GPU says %d, %d\n", grid_cells[i], grid_boids[i]);
 }
 
 __global__ void calculateBoidsKernel(
@@ -127,7 +125,7 @@ __global__ void calculateBoidsKernel(
 	if (i >= N)
 		return;
 
-	/*glm::vec2 new_vel;
+	glm::vec2 new_vel;
 
 	new_vel = vel[i] + apply_boid_rules(pos, vel, i, 1);
 	new_vel = speed_limit(new_vel);
@@ -137,12 +135,14 @@ __global__ void calculateBoidsKernel(
 	glm::vec2 new_pos = pos[i] + (float)d * new_vel;
 	new_pos = teleport_through_wall(new_pos);
 		
-	pos_bb[i] = new_pos;*/
+	pos_bb[i] = new_pos;
 
+	/*
 	int gridX = grid_cells[i] % (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	int gridY = grid_cells[i] / (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	pos_bb[i] = glm::vec2(LEFT_WALL + GRID_R * gridX, 
 		DOWN_WALL + GRID_R * gridY);
+	*/
 
 	//syncthreads instead of two kernels
 }
