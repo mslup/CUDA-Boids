@@ -80,12 +80,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="cuda.cu" />
-    <CudaCompile Include="kernel.cu" />
+    <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cpu_shoal.cpp" />
     <ClCompile Include="cpu_shoal_init.cpp" />
-    <ClCompile Include="display.cpp" />
+    <ClCompile Include="display.cu" />
     <ClCompile Include="framework.h" />
     <ClCompile Include="glad.c" />
   </ItemGroup>
@@ -95,9 +95,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpu_shoal.hpp" />
-    <ClInclude Include="cuda.h" />
+    <ClInclude Include="cuda.cuh" />
     <ClInclude Include="display.hpp" />
     <ClInclude Include="shader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="todo.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

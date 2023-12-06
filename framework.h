@@ -9,7 +9,7 @@
 #include <iostream>
 
 #include <glm/glm.hpp>
-//#define GLM_FORCE_CUDA
+#define GLM_FORCE_CUDA
 
 //#include <cuda_gl_interop.h>
 
@@ -20,4 +20,6 @@ constexpr int HEIGHT = 800;
 #include "shader.h"
 #include "cpu_shoal.hpp"
 #include "display.hpp"
-#include "cuda.h"
+#include "cuda.cuh"
+
+//#define CPU 

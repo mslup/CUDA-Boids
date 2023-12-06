@@ -24,12 +24,12 @@
     <ClCompile Include="cpu_shoal_init.cpp">
       <Filter>Source code</Filter>
     </ClCompile>
-    <ClCompile Include="display.cpp">
+    <ClCompile Include="display.cu">
       <Filter>Source code</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="kernel.cu">
+    <CudaCompile Include="main.cu">
       <Filter>Source code</Filter>
     </CudaCompile>
     <CudaCompile Include="cuda.cu">
@@ -54,8 +54,11 @@
     <ClInclude Include="display.hpp">
       <Filter>Header files</Filter>
     </ClInclude>
-    <ClInclude Include="cuda.h">
+    <ClInclude Include="cuda.cuh">
       <Filter>Header files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="todo.txt" />
   </ItemGroup>
 </Project>

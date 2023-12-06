@@ -85,12 +85,11 @@ Error:
 	return cudaStatus;
 }
 
-__global__ void kernel_tmp(glm::mat3* models, cpu_shoal* shoal)
+__global__ void kernel_tmp(glm::mat3* models, glm::vec2* pos, glm::vec2* vel)
 {
 	int i = threadIdx.x;
-	glm::vec2 pos = glm::vec2(i * 1.0f / N, 0);
 
-	glm::vec2 v = glm::normalize(shoal->velocities[i]);
+	glm::vec2 v = glm::normalize(vel[i]);
 	glm::vec2 vT = glm::vec2(v.y, -v.x);
-	models[i] = glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(pos, 1.0f));	
+	models[i] = glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(pos[i], 1.0f));
 }

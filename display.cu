@@ -5,6 +5,8 @@ GLFWwindow* window;
 unsigned int VBO, VAO;
 unsigned int modelVBO;
 
+//__global__ void kernel_tmp(glm::mat3* models);
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
 	glViewport(0, 0, width, height);
@@ -98,11 +100,26 @@ void render(cpu_shoal *shoal)
 		glBindVertexArray(VAO);
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, N);
 
-		shoal->update_boids();
-
 		glBindBuffer(GL_ARRAY_BUFFER, modelVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->model), &(shoal->model)[0], GL_STATIC_DRAW);
-		
+
+#ifdef GPU
+		//glm::mat3* model;
+		//cudaMalloc(&model, N * sizeof(glm::mat3));
+
+		//kernel_tmp << <1, N >> > (model);
+
+		//size_t size = N * sizeof(glm::mat3);
+		//glm::mat3* host_model = (glm::mat3*)malloc(size);
+
+		//cudaMemcpy(host_model, model, size, cudaMemcpyHostToDevice);
+		//glBufferData(GL_ARRAY_BUFFER, size, host_model, GL_DYNAMIC_DRAW);
+
+		//free(host_model);
+		//cudaFree(model);
+#else
+		shoal->update_boids();
+		glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->model), &(shoal->model)[0], GL_DYNAMIC_DRAW);
+#endif
 
 		showError();
 
@@ -112,3 +129,13 @@ void render(cpu_shoal *shoal)
 
 	glfwTerminate();
 }
+
+//__global__ void kernel_tmp(glm::mat3* models)
+//{
+//	int i = threadIdx.x;
+//	glm::vec2 pos = glm::vec2(i * 1.0f / N, 0);
+//
+//	glm::vec2 v = glm::vec2(0, 1);
+//	glm::vec2 vT = glm::vec2(v.y, -v.x);
+//	models[i] = glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(pos, 1.0f));
+//}

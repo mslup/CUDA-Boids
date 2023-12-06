@@ -1,0 +1,4 @@
+- check for errors
+- imgui
+- cuda opengl interop
+- refactor 
