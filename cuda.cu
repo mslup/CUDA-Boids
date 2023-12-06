@@ -140,7 +140,7 @@ __device__ glm::vec2 speed_limit(glm::vec2 vel)
 __device__ glm::vec2 turn_from_wall(glm::vec2 pos, glm::vec2 vel)
 {
 	float margin = 0.2f;
-	float turn = 5e-3;
+	float turn = 5e-4;
 
 	float dx_right = 1 - pos.x;
 	float dx_left = pos.x + 1;
@@ -163,6 +163,22 @@ __device__ glm::vec2 turn_from_wall(glm::vec2 pos, glm::vec2 vel)
 	return vel + vel_change;
 }
 
+__device__ glm::vec2 teleport_through_wall(glm::vec2 pos)
+{
+	glm::vec2 ret = pos;
+
+	if (pos.x > 1)
+		ret.x = -1;
+	if (pos.y > 1)
+		ret.y = -1;
+	if (pos.x < -1)
+		ret.x = 1;
+	if (pos.y < -1)
+		ret.y = 1;
+
+	return ret;
+}
+
 __global__ void calculateBoidsKernel(glm::vec2* pos,
 	glm::vec2* vel, glm::vec2* pos_bb, glm::vec2* vel_bb, double d)
 {
@@ -175,7 +191,10 @@ __global__ void calculateBoidsKernel(glm::vec2* pos,
 	new_vel = turn_from_wall(pos[i], new_vel);
 
 	vel_bb[i] = new_vel;
-	pos_bb[i] += (float)d * new_vel;
+	glm::vec2 new_pos = pos[i] + (float)d * new_vel;
+	new_pos = teleport_through_wall(new_pos);
+		
+	pos_bb[i] = new_pos;
 }
 
 __global__ void calculateModelKernel(glm::mat3* models, glm::vec2* pos, glm::vec2* vel)
