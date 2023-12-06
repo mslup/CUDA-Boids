@@ -131,11 +131,11 @@ __global__ void calculateBoidsKernel(glm::vec2* pos,
 {
 	int i = threadIdx.x;
 
-	//vel[i] += apply_boid_rules(pos, vel, i, d);
-	pos[i] += (float)d * vel[i];
-
-	pos_bb[i] = pos[i];
 	vel_bb[i] = vel[i];
+	pos_bb[i] = pos[i];
+
+	vel_bb[i] = vel[i];
+	pos_bb[i] += (float)d * vel_bb[i];
 
 }
 
