@@ -1,10 +1,9 @@
 #include "framework.h"
 
 cpu_shoal::cpu_shoal()
+	: height{ 0.04f }, width{ 0.02f }, 
+	vertices{ height / 2, 0, -height / 2, -width / 2, -height / 2, width / 2 }
 {
-	height = 0.04f;
-	width = 0.02f;
-
 	s = 0.01;//3e-2;
 	a = 0.1;//8e-2;
 	c = 0.01;//9e-2;
@@ -17,10 +16,10 @@ cpu_shoal::cpu_shoal()
 
 	visibility_radius = 1e-1;
 
-	glm::vec2 center(0, 0);
+	/*glm::vec2 center(0, 0);
 	vertices[0] = center.x + height / 2, center.y;
 	vertices[1] = center.x - height / 2, center.y - width / 2;
-	vertices[2] = center.x - height / 2, center.y + width / 2;
+	vertices[2] = center.x - height / 2, center.y + width / 2;*/
 
 	init_positions();
 	init_velocities();

@@ -6,7 +6,7 @@ class cpu_shoal
 public:
 	float s, a, c, margin, turn, max_speed, min_speed, visibility_radius;
 	float height, width;
-	float vertices[3];
+	float vertices[6];
 
 	glm::vec2 positions[N];
 	glm::vec2 positions_bb[N];
