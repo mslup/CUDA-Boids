@@ -1,28 +1,34 @@
 #include "framework.h"
 
 cpu_shoal::cpu_shoal()
-	: height{ 0.04f }, width{ 0.02f }, 
-	vertices{ height / 2, 0, 
-			 -height / 2, -width / 2, 
-			 -height / 2, width / 2 }
 {
-	s = 0.01;//3e-2;
-	a = 0.1;//8e-2;
-	c = 0.01;//9e-2;
+	params.height = 0.04f;
+	params.width = 0.02f;
 
-	margin = 0.2f;
-	turn = 5e-3;
+	params.vertices[0] = params.height / 2;
+	params.vertices[1] = 0;
+	params.vertices[2] = -params.height / 2;
+	params.vertices[3] = -params.width / 2;
+	params.vertices[4] = -params.height / 2;
+	params.vertices[5] = params.width / 2;
 
-	max_speed = 1e-2;
-	min_speed = 9e-3;
+	params.s = 0.01;//3e-2;
+	params.a = 0.1;//8e-2;
+	params.c = 0.005;//9e-2;
 
-	visibility_radius = 1e-1;
+	params.margin = 0.2f;
+	params.turn = 5e-4;
+
+	params.max_speed = 0.9;
+	params.min_speed = 0.1;
+
+	params.visibility_radius = 1e-1;
 
 	init_positions();
 	init_velocities();
 	for (int i = 0; i < N; i++)
 	{
-		model[i] = calculate_rotate(positions[i], velocities[i]);
+		models[i] = calculate_rotate(positions[i], velocities[i]);
 	}
 }
 

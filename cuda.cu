@@ -1,13 +1,8 @@
 #include "framework.h"
 #include <stdio.h>
 
-__device__ glm::vec2 apply_boid_rules(glm::vec2* pos, glm::vec2* vel, int i, double d)
+__device__ glm::vec2 apply_boid_rules(glm::vec2* pos, glm::vec2* vel, cpu_shoal::paramsStruct params, int i, double d)
 {
-	float visibility_radius = 1e-1;
-	float s = 0.01;//3e-2;
-	float a = 0.1;//8e-2;
-	float c = 0.005;//9e-2;
-
 	glm::vec2 separation_component(0, 0);
 	glm::vec2 velocity_sum(0, 0);
 	glm::vec2 position_sum(0, 0);
@@ -16,7 +11,7 @@ __device__ glm::vec2 apply_boid_rules(glm::vec2* pos, glm::vec2* vel, int i, dou
 	for (int j = 0; j < N; ++j)
 	{
 		float len = glm::length(pos[i] - pos[j]);
-		if (i != j && len < visibility_radius)
+		if (i != j && len < params.visibility_radius)
 		{
 			separation_component += pos[i] - pos[j];
 			velocity_sum += vel[j];
@@ -37,27 +32,24 @@ __device__ glm::vec2 apply_boid_rules(glm::vec2* pos, glm::vec2* vel, int i, dou
 	alignment_component = velocity_sum - vel[i];
 	cohesion_component = position_sum - pos[i];
 
-	return (float)d* (s * separation_component + a * alignment_component + c * cohesion_component);
+	return (float)d * 
+		(params.s * separation_component 
+		+ params.a * alignment_component 
+		+ params.c * cohesion_component);
 }
 
-__device__ glm::vec2 speed_limit(glm::vec2 vel)
+__device__ glm::vec2 speed_limit(glm::vec2 vel, cpu_shoal::paramsStruct params)
 {
-	float max_speed = 0.9;
-	float min_speed = 0.1;
-
-	if (glm::length(vel) < min_speed)
-		return min_speed * glm::normalize(vel);
-	if (glm::length(vel) > max_speed)
-		return max_speed * glm::normalize(vel);
+	if (glm::length(vel) < params.min_speed)
+		return params.min_speed * glm::normalize(vel);
+	if (glm::length(vel) > params.max_speed)
+		return params.max_speed * glm::normalize(vel);
 
 	return vel;
 }
 
-__device__ glm::vec2 turn_from_wall(glm::vec2 pos, glm::vec2 vel)
+__device__ glm::vec2 turn_from_wall(glm::vec2 pos, glm::vec2 vel, cpu_shoal::paramsStruct params)
 {
-	float margin = 0.2f;
-	float turn = 5e-4;
-
 	float dx_right = 1 - pos.x;
 	float dx_left = pos.x + 1;
 	float dy_up = 1 - pos.y;
@@ -67,14 +59,14 @@ __device__ glm::vec2 turn_from_wall(glm::vec2 pos, glm::vec2 vel)
 
 	glm::vec2 vel_change = glm::vec2(0, 0);
 
-	if (dx_right < margin)
-		vel_change.x -= turn * len / (dx_right * dx_right);
-	if (dx_left < margin)
-		vel_change.x += turn * len / (dx_left * dx_left);
-	if (dy_up < margin)
-		vel_change.y -= turn * len / (dy_up * dy_up);
-	if (dy_down < margin)
-		vel_change.y += turn * len / (dy_down * dy_down);
+	if (dx_right < params.margin)
+		vel_change.x -= params.turn * len / (dx_right * dx_right);
+	if (dx_left < params.margin)
+		vel_change.x += params.turn * len / (dx_left * dx_left);
+	if (dy_up < params.margin)
+		vel_change.y -= params.turn * len / (dy_up * dy_up);
+	if (dy_down < params.margin)
+		vel_change.y += params.turn * len / (dy_down * dy_down);
 
 	return vel + vel_change;
 }
@@ -107,22 +99,18 @@ __device__ int calculate_grid_index(glm::vec2 pos)
 	return gridY * gridSize + gridX;
 }
 
-
-__global__ void calculateGridKernel(int* grid_cells, int* grid_boids, glm::vec2* pos)
+__global__ void calculateGridKernel(cudaArrays soa)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 
 	if (i >= N)
 		return;
 
-	grid_cells[i] = calculate_grid_index(pos[i]);
-	grid_boids[i] = i;
+	soa.grid_cells[i] = calculate_grid_index(soa.positions[i]);
+	soa.grid_boids[i] = i;
 }
 
-__global__ void calculateBoidsKernel(
-	glm::vec2* pos, glm::vec2* vel, 
-	glm::vec2* pos_bb, glm::vec2* vel_bb, 
-	int* grid_cells, int* grid_boids, double d)
+__global__ void calculateBoidsKernel(cudaArrays soa, cpu_shoal::paramsStruct params, double d)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -131,17 +119,17 @@ __global__ void calculateBoidsKernel(
 
 	glm::vec2 new_vel;
 
-	new_vel = vel[i] + apply_boid_rules(pos, vel, i, 1);
-	new_vel = speed_limit(new_vel);
-	new_vel = turn_from_wall(pos[i], new_vel);
+	new_vel = soa.velocities[i] 
+		+ apply_boid_rules(soa.positions, soa.velocities, params, i, 1);
+	new_vel = speed_limit(new_vel, params);
+	new_vel = turn_from_wall(soa.positions[i], new_vel, params);
 
-	vel_bb[i] = new_vel;
-	glm::vec2 new_pos = pos[i] + (float)d * new_vel;
+	soa.velocities_bb[i] = new_vel;
+	glm::vec2 new_pos = soa.positions[i] + (float)d * new_vel;
 	new_pos = teleport_through_wall(new_pos);
 		
-	pos_bb[i] = new_pos;
+	soa.positions_bb[i] = new_pos;
 
-	
 	//int gridX = grid_cells[i] % (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	//int gridY = grid_cells[i] / (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	//pos_bb[i] = glm::vec2(LEFT_WALL + GRID_R * gridX, 
@@ -151,7 +139,7 @@ __global__ void calculateBoidsKernel(
 	//syncthreads instead of two kernels
 }
 
-__global__ void calculateModelKernel(glm::mat3* models, glm::vec2* pos, glm::vec2* vel)
+__global__ void calculateModelKernel(cudaArrays soa)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -159,7 +147,7 @@ __global__ void calculateModelKernel(glm::mat3* models, glm::vec2* pos, glm::vec
 		return;
 
 	// calculate model matrix
-	glm::vec2 v = glm::normalize(vel[i]);
+	glm::vec2 v = glm::normalize(soa.velocities[i]);
 	glm::vec2 vT = glm::vec2(v.y, -v.x);
-	models[i] = glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(pos[i], 1.0f));
+	soa.models[i] = glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(soa.positions[i], 1.0f));
 }
