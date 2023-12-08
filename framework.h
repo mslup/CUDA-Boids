@@ -21,10 +21,10 @@
 #include "ImGUI/imgui_impl_glfw.h"
 #include "ImGUI/imgui_impl_opengl3.h"
 
-constexpr int N = 7000;
+constexpr int N = 1000;
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 800;
-constexpr float R = 0.25f;
+constexpr float R = 0.125f;
 constexpr float GRID_R = 2 * R;
 constexpr float LEFT_WALL = -1;
 constexpr float DOWN_WALL = -1;

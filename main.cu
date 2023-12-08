@@ -12,7 +12,6 @@ void checkCudaError()
 
 void gpu(cpu_shoal*, double);
 
-
 //todo: not global
 struct cudaArrays cudaArrays;
 
@@ -98,7 +97,7 @@ int main()
 
 #ifdef CPU
 		shoal->update_boids(deltaTime);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->model), &(shoal->model)[0], GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->models), &(shoal->models)[0], GL_DYNAMIC_DRAW);
 #else
 		gpu(shoal, deltaTime);
 #endif
@@ -112,7 +111,7 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 
-		//for (;;);
+		//while (true);
 	}
 
 	ImGui_ImplOpenGL3_Shutdown();
@@ -145,6 +144,10 @@ struct compare_by_x {
 
 void gpu(cpu_shoal* shoal, double deltaTime)
 {
+	static float x = 0, static float y = 0;
+	ImGui::SliderFloat("x", &x, -1.0f, 1.0f);
+	ImGui::SliderFloat("y", &y, -1.0f, 1.0f);
+
 	// INITIALIZE ---------------------------------------------------------
 	size_t mat_size = N * sizeof(glm::mat3);
 	size_t vec_size = N * sizeof(glm::vec2);
@@ -171,24 +174,26 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	int* grid_boids_cpu = (int*)malloc(int_size);
 	cudaMemcpy(grid_boids_cpu, cudaArrays.grid_boids, int_size, cudaMemcpyDeviceToHost);
 
-	//for (int i = 0; i < N; ++i)
-	//	std::cout << i << " " << grid_cpu[i] << ", " << grid_boids_cpu[i] << std::endl;
+	/*std::cout << "komorka - rybka" << std::endl;
+	for (int i = 0; i < N; ++i)
+		std::cout << i << " " << grid_cpu[i] << ", " << grid_boids_cpu[i] << std::endl;*/
 
 	//TODO: do this on gpu
 	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	size_t size = density * density;
 	size_t num_bytes = size * sizeof(int);
 
-	int* starts = new int[size]; //(int*)malloc(num_bytes);
-	int* sizes = new int[size]; //(int*)malloc(num_bytes);
+	int* starts = new int[size]; 
+	int* sizes = new int[size]; 
 	std::memset(starts, -1, num_bytes);
-	std::memset(sizes, -1, num_bytes);
+	std::memset(sizes, 0, num_bytes);
 
 	int start_index = 0;
 	int current_cell = 0;
 	int len = 1;
 	int i = 0;
 
+	//std::cout << "komorka: zaczyna sie w indeksie | ma tyle rybek" << std::endl;
 	while (i < N) 
 	{
 		int current_cell = grid_cpu[i];
@@ -210,15 +215,9 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	cudaMemcpy(cudaArrays.grid_starts, starts, num_bytes, cudaMemcpyHostToDevice);
 	cudaMemcpy(cudaArrays.grid_cellsizes, sizes, num_bytes, cudaMemcpyHostToDevice);
 
-	free(grid_boids_cpu);
-	free(grid_cpu);
-	delete[] starts; //free(starts);
-	delete[] sizes; //free(sizes);
-
-	
 
 	// POSITIONS & VELOCITIES -----------------------------------------------
-	calculateBoidsKernel <<<blocks_per_grid, max_threads>>> (cudaArrays, shoal->params, deltaTime);
+	calculateBoidsKernel <<<blocks_per_grid, max_threads>>> (cudaArrays, shoal->params, deltaTime,x , y);
 
 	cudaMemcpy(cudaArrays.positions, cudaArrays.positions_bb, vec_size, cudaMemcpyDeviceToDevice);
 	cudaMemcpy(cudaArrays.velocities, cudaArrays.velocities_bb, vec_size, cudaMemcpyDeviceToDevice);
@@ -233,4 +232,8 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	glBufferData(GL_ARRAY_BUFFER, mat_size, host_model, GL_DYNAMIC_DRAW);
 
 	free(host_model);
+	free(grid_boids_cpu);
+	free(grid_cpu);
+	delete[] starts; 
+	delete[] sizes; 
 }
