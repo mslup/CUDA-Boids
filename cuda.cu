@@ -95,15 +95,18 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 		int start = grid_starts[cell + start_offset];
 		int len = grid_cellsizes[cell] + grid_cellsizes[cell + horizontal_offset];
 
+		// todo: merge R with visib_radius
+		float radius_sq = R * R;
 		// todo: check for wyjscie z grida
 
-		//printf("jestem rybka nr 10 i jestem w komorce %d ktora sie zaczyna w indeksie %d\n", cell, start);
 		for (int k = start; k < start + len; k++)
 		{
 			if (boids[k] == i) continue;
 
-			//printf("indeks komorki %d to rybka %d i ona jest w komorce %d\n", k, boids[k], calculate_grid_index(pos[boids[k]]));
-			soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
+			glm::vec2 diff = pos[i] - pos[boids[k]];
+			float lensq = glm::dot(diff, diff);
+			if (lensq < radius_sq)
+				soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
 		}
 
 		cell = cell + vertical_offset;
@@ -112,8 +115,11 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 		for (int k = start; k < start + len; k++)
 		{
 			if (boids[k] == i) continue;
-			//printf("indeks komorki %d to rybka %d i ona jest w komorce %d\n", k, boids[k], calculate_grid_index(pos[boids[k]]));
-			soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
+
+			glm::vec2 diff = pos[i] - pos[boids[k]];
+			float lensq = glm::dot(diff, diff);
+			if (lensq < radius_sq)
+				soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
 		}
 	}
 
@@ -222,7 +228,7 @@ __global__ void calculateBoidsKernel(cudaArrays soa, cpu_shoal::paramsStruct par
 
 	if (i != 42)
 	{
-		soa.positions_bb[i] = glm::vec2(LEFT_WALL + GRID_R * gridX, DOWN_WALL + GRID_R * gridY);
+		//soa.positions_bb[i] = glm::vec2(LEFT_WALL + GRID_R * gridX, DOWN_WALL + GRID_R * gridY);
 	}
 	else
 		soa.positions_bb[i] = glm::vec2(x, y);//0.7f * glm::vec2(glm::sin(d), glm::cos(d));
