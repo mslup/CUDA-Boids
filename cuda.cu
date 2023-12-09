@@ -1,6 +1,7 @@
 #include "framework.h"
 #include <stdio.h>
-#define SNAP_TO_GRID
+
+//#define NAIVE
 
 // todo: add declarations in cuh; reclamp 
 __device__ int calculate_grid_index(glm::vec2 pos)
@@ -17,8 +18,15 @@ __device__ int calculate_grid_index(glm::vec2 pos)
 	return gridY * gridSize + gridX;
 }
 
+struct boidParamsStruct {
+	glm::vec2* separation_component;
+	glm::vec2* velocity_sum;
+	glm::vec2* position_sum;
+	int* neighbors;
+} boidParams;
+
 // todo: everything to const ref
-__device__ void iterate_through_cell(const cudaArrays &soa, int cell, int i)
+__device__ void iterate_through_cell(const cudaArrays& soa, int cell, int i, boidParamsStruct boidParams)
 {
 	glm::vec2* pos = soa.positions;
 	glm::vec2* pos_bb = soa.positions_bb;
@@ -35,12 +43,20 @@ __device__ void iterate_through_cell(const cudaArrays &soa, int cell, int i)
 	int len = grid_cellsizes[cell];
 	for (int k = start; k < start + len; k++)
 	{
-		if (boids[k] == i) continue;
+		int j = boids[k];
+		if (i == j) continue;
 
 		glm::vec2 diff = pos[i] - pos[boids[k]];
 		float lensq = glm::dot(diff, diff);
 		if (lensq < radius_sq)
-			soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
+		{
+			//soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
+
+			(*boidParams.separation_component) += pos[i] - pos[j];
+			(*boidParams.velocity_sum) += vel[j];
+			(*boidParams.position_sum) += pos[j];
+			(*boidParams.neighbors)++;
+		}
 	}
 }
 
@@ -60,10 +76,18 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 	int neighbors = 0;
 	float radius_sq = R * R;
 
-	/*for (int j = 0; j < N; ++j)
+	boidParamsStruct boidParams;
+
+	boidParams.separation_component = &separation_component;
+	boidParams.velocity_sum = &velocity_sum;
+	boidParams.position_sum = &position_sum;
+	boidParams.neighbors = &neighbors;
+
+#ifdef NAIVE
+	for (int j = 0; j < N; ++j)
 	{
 		float len = glm::length(pos[i] - pos[j]);
-		if (i != j && len < params.visibility_radius)
+		if (i != j && len < R)
 		{
 			separation_component += pos[i] - pos[j];
 			velocity_sum += vel[j];
@@ -71,69 +95,46 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 
 			neighbors++;
 		}
-	}*/
+	}
+#else
+	int density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	int cell = calculate_grid_index(pos[i]);
+	int gridX = cell % density;
+	int gridY = cell / density;
 
-	/*
-	cell + den - 1 | cell + den | cell + den - 1
-	--------------------------------------------
-		cell - 1   |    cell    |   cell + 1
-	--------------------------------------------
-	cell - den - 1 | cell - den | cell - den - 1
-	*/
+	// todo: calculate this beforehand? sort a duplicate buffer?
+	int start_offset, horizontal_offset, vertical_offset;
 
-	for (int j = 0; j < N; ++j)
+	if (pos[i].x >= LEFT_WALL + (gridX + 0.5) * GRID_R)
 	{
-		if (j != 42)
-			soa.velocities_bb[j] = glm::vec2(0, 1);
+		start_offset = 0;
+		horizontal_offset = 1;
+	}
+	else
+	{
+		start_offset = -1;
+		horizontal_offset = -1;
 	}
 
-	if (i == 42)
-	{
-		int density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
-		int cell = calculate_grid_index(pos[i]);
-		int gridX = cell % density;
-		int gridY = cell / density;
+	if (pos[i].y >= DOWN_WALL + (gridY + 0.5) * GRID_R)
+		vertical_offset = density;
+	else
+		vertical_offset = -density;
 
-		//soa.positions_bb[i] += 0.2;
-		soa.velocities_bb[i] = glm::vec2(-1, -1);
+	iterate_through_cell(soa, cell, i, boidParams);
 
-		// todo: calculate this beforehand? sort a duplicate buffer?
-		int start_offset, horizontal_offset, vertical_offset;
+	if ((cell + horizontal_offset) / density == cell / density)
+		iterate_through_cell(soa, cell + horizontal_offset, i, boidParams);
 
-		// SPRAWDZAJ TO NA ZWYKLYM BUFFERZE I NIZEJ TEZ
-		if (pos[i].x >= LEFT_WALL + (gridX + 0.5) * GRID_R)
-		{
-			start_offset = 0;
-			horizontal_offset = 1;
-		}
-		else
-		{
-			start_offset = -1;
-			horizontal_offset = -1;
-		}
+	if (cell + vertical_offset >= 0 && cell + vertical_offset < density * density)
+		iterate_through_cell(soa, cell + vertical_offset, i, boidParams);
 
-		if (pos[i].y >= DOWN_WALL + (gridY + 0.5) * GRID_R)
-			vertical_offset = density;
-		else
-			vertical_offset = -density;
-		// todo: check for wyjscie z grida
+	if (cell + vertical_offset + horizontal_offset >= 0
+		&& cell + vertical_offset + horizontal_offset < density * density
+		&& (cell + vertical_offset + horizontal_offset) / density == (cell + vertical_offset) / density)
+		iterate_through_cell(soa, cell + vertical_offset + horizontal_offset, i, boidParams);
+#endif
 
-		iterate_through_cell(soa, cell, i);
-
-		if ((cell + horizontal_offset) / density == cell / density)
-			iterate_through_cell(soa, cell + horizontal_offset, i);
-
-		if (cell + vertical_offset >= 0 && cell + vertical_offset < density * density)
-			iterate_through_cell(soa, cell + vertical_offset, i);
-
-		if (cell + vertical_offset + horizontal_offset >= 0 
-			&& cell + vertical_offset + horizontal_offset < density * density
-			&& (cell + vertical_offset + horizontal_offset) / density == (cell +vertical_offset) / density)
-			iterate_through_cell(soa, cell + vertical_offset + horizontal_offset, i);
-
-	}
-
-	/*
 	glm::vec2 alignment_component;
 	glm::vec2 cohesion_component;
 
@@ -147,8 +148,8 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 
 	return (float)d *
 		(params.s * separation_component
-		+ params.a * alignment_component
-		+ params.c * cohesion_component);*/
+			+ params.a * alignment_component
+			+ params.c * cohesion_component);
 }
 
 __device__ glm::vec2 speed_limit(glm::vec2 vel, const cpu_shoal::paramsStruct& params)

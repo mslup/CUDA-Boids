@@ -135,12 +135,6 @@ int main()
 	return 0;
 }
 
-struct compare_by_x {
-	__host__ __device__
-		bool operator()(const glm::vec2& a, const glm::vec2& b) const {
-		return a.x < b.x;
-	}
-};
 
 void gpu(cpu_shoal* shoal, double deltaTime)
 {
