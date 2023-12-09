@@ -144,7 +144,7 @@ struct compare_by_x {
 
 void gpu(cpu_shoal* shoal, double deltaTime)
 {
-	static float x = 0, static float y = 0;
+	static float x = -1, static float y = -1;
 	ImGui::SliderFloat("x", &x, -1.0f, 1.0f);
 	ImGui::SliderFloat("y", &y, -1.0f, 1.0f);
 

@@ -17,6 +17,32 @@ __device__ int calculate_grid_index(glm::vec2 pos)
 	return gridY * gridSize + gridX;
 }
 
+// todo: everything to const ref
+__device__ void iterate_through_cell(const cudaArrays &soa, int cell, int i)
+{
+	glm::vec2* pos = soa.positions;
+	glm::vec2* pos_bb = soa.positions_bb;
+	glm::vec2* vel = soa.velocities;
+	int* grid_starts = soa.grid_starts;
+	int* grid_cells = soa.grid_cells;
+	int* grid_cellsizes = soa.grid_cellsizes;
+	int* boids = soa.grid_boids;
+
+	// todo: merge R with visib_radius
+	float radius_sq = R * R;
+
+	int start = grid_starts[cell];
+	int len = grid_cellsizes[cell];
+	for (int k = start; k < start + len; k++)
+	{
+		if (boids[k] == i) continue;
+
+		glm::vec2 diff = pos[i] - pos[boids[k]];
+		float lensq = glm::dot(diff, diff);
+		if (lensq < radius_sq)
+			soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
+	}
+}
 
 __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStruct& params, int i, double d)
 {
@@ -32,6 +58,7 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 	glm::vec2 velocity_sum(0, 0);
 	glm::vec2 position_sum(0, 0);
 	int neighbors = 0;
+	float radius_sq = R * R;
 
 	/*for (int j = 0; j < N; ++j)
 	{
@@ -74,8 +101,6 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 		int start_offset, horizontal_offset, vertical_offset;
 
 		// SPRAWDZAJ TO NA ZWYKLYM BUFFERZE I NIZEJ TEZ
-		//printf("pos %f, gridX %f, gridX %f\n", pos[i].x, gridX, gridX + GRID_R / 2);
-		//printf("GRID_R %f, / 2 %f\n", (gridX + 0.5) * GRID_R);
 		if (pos[i].x >= LEFT_WALL + (gridX + 0.5) * GRID_R)
 		{
 			start_offset = 0;
@@ -91,36 +116,21 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 			vertical_offset = density;
 		else
 			vertical_offset = -density;
-
-		int start = grid_starts[cell + start_offset];
-		int len = grid_cellsizes[cell] + grid_cellsizes[cell + horizontal_offset];
-
-		// todo: merge R with visib_radius
-		float radius_sq = R * R;
 		// todo: check for wyjscie z grida
 
-		for (int k = start; k < start + len; k++)
-		{
-			if (boids[k] == i) continue;
+		iterate_through_cell(soa, cell, i);
 
-			glm::vec2 diff = pos[i] - pos[boids[k]];
-			float lensq = glm::dot(diff, diff);
-			if (lensq < radius_sq)
-				soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
-		}
+		if ((cell + horizontal_offset) / density == cell / density)
+			iterate_through_cell(soa, cell + horizontal_offset, i);
 
-		cell = cell + vertical_offset;
-		start = grid_starts[cell + start_offset];
-		len = grid_cellsizes[cell] + grid_cellsizes[cell + horizontal_offset];
-		for (int k = start; k < start + len; k++)
-		{
-			if (boids[k] == i) continue;
+		if (cell + vertical_offset >= 0 && cell + vertical_offset < density * density)
+			iterate_through_cell(soa, cell + vertical_offset, i);
 
-			glm::vec2 diff = pos[i] - pos[boids[k]];
-			float lensq = glm::dot(diff, diff);
-			if (lensq < radius_sq)
-				soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
-		}
+		if (cell + vertical_offset + horizontal_offset >= 0 
+			&& cell + vertical_offset + horizontal_offset < density * density
+			&& (cell + vertical_offset + horizontal_offset) / density == (cell +vertical_offset) / density)
+			iterate_through_cell(soa, cell + vertical_offset + horizontal_offset, i);
+
 	}
 
 	/*
