@@ -26,20 +26,26 @@ __device__ void iterate_through_cell(const cudaArrays &soa, int cell, int i)
 	int* grid_starts = soa.grid_starts;
 	int* grid_cells = soa.grid_cells;
 	int* grid_cellsizes = soa.grid_cellsizes;
+	int* grid_ends = soa.grid_ends;
 	int* boids = soa.grid_boids;
 
 	// todo: merge R with visib_radius
 	float radius_sq = R * R;
 
 	int start = grid_starts[cell];
-	int len = grid_cellsizes[cell];
-	for (int k = start; k < start + len; k++)
+
+	if (start == -1) // empty cell
+		return;
+
+	//int len = grid_cellsizes[cell];
+	int end = grid_ends[cell];
+	for (int k = start; k < end; k++)
 	{
 		if (boids[k] == i) continue;
 
 		glm::vec2 diff = pos[i] - pos[boids[k]];
 		float lensq = glm::dot(diff, diff);
-		if (lensq < radius_sq)
+		//if (lensq < radius_sq)
 			soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
 	}
 }
@@ -72,14 +78,6 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 			neighbors++;
 		}
 	}*/
-
-	/*
-	cell + den - 1 | cell + den | cell + den - 1
-	--------------------------------------------
-		cell - 1   |    cell    |   cell + 1
-	--------------------------------------------
-	cell - den - 1 | cell - den | cell - den - 1
-	*/
 
 	for (int j = 0; j < N; ++j)
 	{
@@ -210,7 +208,28 @@ __global__ void calculateGridKernel(cudaArrays soa)
 	soa.grid_cells[i] = calculate_grid_index(soa.positions[i]);
 	soa.grid_boids[i] = i;
 
-	// these are sorted later
+	// these are getting sorted later
+}
+
+__global__ void calculateGridStartsKernel(struct cudaArrays soa)
+{
+	int i = threadIdx.x + blockIdx.x * blockDim.x;
+
+	if (i >= N)
+		return;
+
+	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	size_t grid_size = density * density * sizeof(int);
+
+	int cell = soa.grid_cells[i];
+	int prev_cell = i != 0 ? soa.grid_cells[i - 1] : -1;
+	if (i == 0 || cell != prev_cell)
+	{
+		// todo: there's a bottleneck
+		soa.grid_starts[cell] = i;
+		if (i != 0)
+			soa.grid_ends[prev_cell] = i;
+	}
 }
 
 __global__ void calculateBoidsKernel(cudaArrays soa, cpu_shoal::paramsStruct params, double d, float x, float y)

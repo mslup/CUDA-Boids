@@ -2,7 +2,7 @@
 #include <ctime>
 #include <cstdlib>
 
-void checkCudaError() 
+void checkCudaError()
 {
 	cudaError_t cudaStatus = cudaGetLastError();
 	if (cudaStatus != cudaSuccess) {
@@ -40,7 +40,8 @@ int main()
 	size_t mat_size = N * sizeof(glm::mat3);
 	size_t vec_size = N * sizeof(glm::vec2);
 	size_t int_size = N * sizeof(int);
-
+	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	size_t grid_size = density * density * sizeof(int);
 
 	cudaMalloc(&cudaArrays.models, mat_size);
 	cudaMalloc(&cudaArrays.positions, vec_size);
@@ -49,10 +50,11 @@ int main()
 	cudaMalloc(&cudaArrays.velocities_bb, vec_size);
 	cudaMalloc(&cudaArrays.grid_cells, int_size);
 	cudaMalloc(&cudaArrays.grid_boids, int_size);
-	cudaMalloc(&cudaArrays.grid_starts, int_size);
-	cudaMalloc(&cudaArrays.grid_cellsizes, int_size);
+	cudaMalloc(&cudaArrays.grid_starts, grid_size);
+	cudaMalloc(&cudaArrays.grid_cellsizes, grid_size);
+	cudaMalloc(&cudaArrays.grid_ends, grid_size);
 #endif
-	
+
 	glfwSwapInterval(0);
 
 	int num_frames = 0;
@@ -79,13 +81,13 @@ int main()
 		ImGui::SliderFloat("visbility_radius", &shoal->params.visibility_radius, 0.0f, 0.5f);
 
 		num_frames++;
-		if (currentTime - previousFpsTime >= 1.0) 
-		{ 
+		if (currentTime - previousFpsTime >= 1.0)
+		{
 			// printf and reset timer
 			//printf("%d fps\n", num_frames);
 			fps = num_frames;
 			num_frames = 0;
-			previousFpsTime += 1.0; 
+			previousFpsTime += 1.0;
 		}
 		ImGui::Text("%d fps", fps);
 
@@ -129,6 +131,7 @@ int main()
 	cudaFree(cudaArrays.grid_boids);
 	cudaFree(cudaArrays.grid_starts);
 	cudaFree(cudaArrays.grid_cellsizes);
+	cudaFree(cudaArrays.grid_ends);
 
 	//TODO: tu powinno byc jakies zwalnianie cudy
 
@@ -144,7 +147,9 @@ struct compare_by_x {
 
 void gpu(cpu_shoal* shoal, double deltaTime)
 {
-	static float x = -1, static float y = -1;
+
+
+	static float x = 0, static float y = 0;
 	ImGui::SliderFloat("x", &x, -1.0f, 1.0f);
 	ImGui::SliderFloat("y", &y, -1.0f, 1.0f);
 
@@ -152,39 +157,44 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	size_t mat_size = N * sizeof(glm::mat3);
 	size_t vec_size = N * sizeof(glm::vec2);
 	size_t int_size = N * sizeof(int);
+	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	size_t grid_size = density * density * sizeof(int);
 
 	glm::mat3* host_model = (glm::mat3*)malloc(mat_size);
 
 	cudaMemcpy(cudaArrays.positions, shoal->positions, vec_size, cudaMemcpyHostToDevice);
 	cudaMemcpy(cudaArrays.velocities, shoal->velocities, vec_size, cudaMemcpyHostToDevice);
-	cudaMemcpy(cudaArrays.positions_bb,  cudaArrays.positions, vec_size, cudaMemcpyDeviceToDevice);
+	cudaMemcpy(cudaArrays.positions_bb, cudaArrays.positions, vec_size, cudaMemcpyDeviceToDevice);
 	cudaMemcpy(cudaArrays.velocities_bb, cudaArrays.velocities, vec_size, cudaMemcpyDeviceToDevice);
+	cudaMemset(cudaArrays.grid_boids, 0, int_size);
+	cudaMemset(cudaArrays.grid_cells, 0, int_size);
+	cudaMemset(cudaArrays.grid_starts, -1, grid_size);
+	cudaMemset(cudaArrays.grid_cellsizes, 0, grid_size);	
+	cudaMemset(cudaArrays.grid_ends, -1, grid_size);	
 
 	const int max_threads = 1024;
 	int blocks_per_grid = (N + max_threads - 1) / max_threads;
-
 
 	// GRID ----------------------------------------------------------------
 	calculateGridKernel << <blocks_per_grid, max_threads >> > (cudaArrays);
 
 	thrust::sort_by_key(thrust::device, cudaArrays.grid_cells, cudaArrays.grid_cells + N, cudaArrays.grid_boids);
 
+	calculateGridStartsKernel << <blocks_per_grid, max_threads >> > (cudaArrays);
+
+	/*
 	int* grid_cpu = (int*)malloc(int_size);
 	cudaMemcpy(grid_cpu, cudaArrays.grid_cells, int_size, cudaMemcpyDeviceToHost);
 	int* grid_boids_cpu = (int*)malloc(int_size);
 	cudaMemcpy(grid_boids_cpu, cudaArrays.grid_boids, int_size, cudaMemcpyDeviceToHost);
-
-	/*std::cout << "komorka - rybka" << std::endl;
-	for (int i = 0; i < N; ++i)
-		std::cout << i << " " << grid_cpu[i] << ", " << grid_boids_cpu[i] << std::endl;*/
 
 	//TODO: do this on gpu
 	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	size_t size = density * density;
 	size_t num_bytes = size * sizeof(int);
 
-	int* starts = new int[size]; 
-	int* sizes = new int[size]; 
+	int* starts = new int[size];
+	int* sizes = new int[size];
 	std::memset(starts, -1, num_bytes);
 	std::memset(sizes, 0, num_bytes);
 
@@ -192,13 +202,12 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	int current_cell = 0;
 	int len = 1;
 	int i = 0;
-
-	//std::cout << "komorka: zaczyna sie w indeksie | ma tyle rybek" << std::endl;
-	while (i < N) 
+	
+	while (i < N)
 	{
 		int current_cell = grid_cpu[i];
 		int start_index = i;
-		int len = 1;  
+		int len = 1;
 
 		while (i + 1 < N && grid_cpu[i] == grid_cpu[i + 1]) {
 			len++;
@@ -211,13 +220,13 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 		//std::cout << current_cell << ": " << starts[current_cell] << " " << sizes[current_cell] << std::endl;
 		i++;
 	}
-	
+
 	cudaMemcpy(cudaArrays.grid_starts, starts, num_bytes, cudaMemcpyHostToDevice);
 	cudaMemcpy(cudaArrays.grid_cellsizes, sizes, num_bytes, cudaMemcpyHostToDevice);
-
+	*/
 
 	// POSITIONS & VELOCITIES -----------------------------------------------
-	calculateBoidsKernel <<<blocks_per_grid, max_threads>>> (cudaArrays, shoal->params, deltaTime,x , y);
+	calculateBoidsKernel << <blocks_per_grid, max_threads >> > (cudaArrays, shoal->params, deltaTime, x, y);
 
 	cudaMemcpy(cudaArrays.positions, cudaArrays.positions_bb, vec_size, cudaMemcpyDeviceToDevice);
 	cudaMemcpy(cudaArrays.velocities, cudaArrays.velocities_bb, vec_size, cudaMemcpyDeviceToDevice);
@@ -225,15 +234,15 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	// MODEL MATRICES -------------------------------------------------------
 	calculateModelKernel << <blocks_per_grid, max_threads >> > (cudaArrays);
 
-	cudaMemcpy(shoal->positions,  cudaArrays.positions_bb, vec_size, cudaMemcpyDeviceToHost);
+	cudaMemcpy(shoal->positions, cudaArrays.positions_bb, vec_size, cudaMemcpyDeviceToHost);
 	cudaMemcpy(shoal->velocities, cudaArrays.velocities_bb, vec_size, cudaMemcpyDeviceToHost);
 
 	cudaMemcpy(host_model, cudaArrays.models, mat_size, cudaMemcpyDeviceToHost);
 	glBufferData(GL_ARRAY_BUFFER, mat_size, host_model, GL_DYNAMIC_DRAW);
 
 	free(host_model);
-	free(grid_boids_cpu);
-	free(grid_cpu);
-	delete[] starts; 
-	delete[] sizes; 
+	//free(grid_boids_cpu);
+	//free(grid_cpu);
+	//delete[] starts;
+	//delete[] sizes;
 }
