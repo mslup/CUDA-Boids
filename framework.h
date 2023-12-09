@@ -45,8 +45,9 @@ struct cudaArrays {
 	glm::vec2* velocities_bb;
 	int* grid_cells;
 	int* grid_boids;
-	int* grid_starts;
+	int* grid_starts; // inclusive
 	int* grid_cellsizes;
+	int* grid_ends; // exclusive
 };
 
 //#define CPU 

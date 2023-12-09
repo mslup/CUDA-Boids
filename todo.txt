@@ -8,3 +8,4 @@
 - malloc before loop
 - niech sie nie sklejaja debile
 - pause
+- sciezki wykonania takie smae dla watkow
