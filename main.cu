@@ -17,6 +17,9 @@ struct cudaArrays cudaArrays;
 
 bool pause = false;
 
+glm::vec3 backColor = glm::vec3(84, 65, 78);
+glm::vec3 boidColor = glm::vec3(167, 144, 165);
+
 int main()
 {
 
@@ -37,7 +40,10 @@ int main()
 #ifdef CPU
 	shader.setFloat3("boidColor", 0.2f, 0.7f, 0.4f);
 #else
-	shader.setFloat3("boidColor", 0.9f, 0.5f, 0.0f);
+	shader.setFloat3("boidColor", 
+		boidColor.r / 255.0f, 
+		boidColor.g / 255.0f, 
+		boidColor.b / 255.0f);
 
 	size_t mat_size = N * sizeof(glm::mat3);
 	size_t vec_size = N * sizeof(glm::vec2);
@@ -54,6 +60,10 @@ int main()
 	cudaMalloc(&cudaArrays.grid_boids, int_size);
 	cudaMalloc(&cudaArrays.grid_starts, grid_size);
 	cudaMalloc(&cudaArrays.grid_ends, grid_size);
+
+	cudaMemcpy(cudaArrays.positions, shoal->positions, vec_size, cudaMemcpyHostToDevice);
+	cudaMemcpy(cudaArrays.velocities, shoal->velocities, vec_size, cudaMemcpyHostToDevice);
+
 #endif
 
 	glfwSwapInterval(0);
@@ -79,7 +89,6 @@ int main()
 			pause = !pause;
 		}
 
-
 		ImGui::SliderFloat("cohesion", &shoal->params.c, 0.0f, 0.5f);
 		ImGui::SliderFloat("separation", &shoal->params.s, 0.0f, 0.1f);
 		ImGui::SliderFloat("alignment", &shoal->params.a, 0.0f, 0.5f);
@@ -90,19 +99,22 @@ int main()
 		num_frames++;
 		if (currentTime - previousFpsTime >= 1.0)
 		{
-			// printf and reset timer
-			//printf("%d fps\n", num_frames);
 			fps = num_frames;
 			num_frames = 0;
 			previousFpsTime += 1.0;
 		}
 		ImGui::Text("%d fps", fps);
 
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(backColor.r / 255.0f, 
+			backColor.g / 255.0f, 
+			backColor.b / 255.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		glBindVertexArray(VAO);
 		glBindBuffer(GL_ARRAY_BUFFER, modelVBO);
+		glBufferData(GL_ARRAY_BUFFER, mat_size, 0, GL_DYNAMIC_DRAW);
+		glBindBuffer(GL_ARRAY_BUFFER, 0); // ???????????????
+		cudaGraphicsGLRegisterBuffer(&cudaVBO, modelVBO, cudaGraphicsMapFlagsWriteDiscard);
 
 		if (!pause)
 		{
@@ -122,8 +134,6 @@ int main()
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
-
-		//while (true);
 	}
 
 	ImGui_ImplOpenGL3_Shutdown();
@@ -150,23 +160,12 @@ int main()
 
 void gpu(cpu_shoal* shoal, double deltaTime)
 {
-	static float x = 0, static float y = 0;
-	ImGui::SliderFloat("x", &x, -1.0f, 1.0f);
-	ImGui::SliderFloat("y", &y, -1.0f, 1.0f);
-
-	// INITIALIZE ---------------------------------------------------------
 	size_t mat_size = N * sizeof(glm::mat3);
 	size_t vec_size = N * sizeof(glm::vec2);
 	size_t int_size = N * sizeof(int);
 	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	size_t grid_size = density * density * sizeof(int);
 
-	glm::mat3* host_model = (glm::mat3*)malloc(mat_size);
-
-	cudaMemcpy(cudaArrays.positions, shoal->positions, vec_size, cudaMemcpyHostToDevice);
-	cudaMemcpy(cudaArrays.velocities, shoal->velocities, vec_size, cudaMemcpyHostToDevice);
-	cudaMemcpy(cudaArrays.positions_bb, cudaArrays.positions, vec_size, cudaMemcpyDeviceToDevice);
-	cudaMemcpy(cudaArrays.velocities_bb, cudaArrays.velocities, vec_size, cudaMemcpyDeviceToDevice);
 	cudaMemset(cudaArrays.grid_boids, 0, int_size);
 	cudaMemset(cudaArrays.grid_cells, 0, int_size);
 	cudaMemset(cudaArrays.grid_starts, -1, grid_size);
@@ -175,25 +174,14 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	const int max_threads = 1024;
 	int blocks_per_grid = (N + max_threads - 1) / max_threads;
 
-	// GRID ----------------------------------------------------------------
+	glm::mat3* models;
+	cudaGraphicsMapResources(1, &cudaVBO, 0);
+	cudaGraphicsResourceGetMappedPointer((void**)&models, NULL, cudaVBO);
+
 	calculateGridKernel << <blocks_per_grid, max_threads >> > (cudaArrays);
-
 	thrust::sort_by_key(thrust::device, cudaArrays.grid_cells, cudaArrays.grid_cells + N, cudaArrays.grid_boids);
-
 	calculateGridStartsKernel << <blocks_per_grid, max_threads >> > (cudaArrays);
+	calculateBoidsKernel << <blocks_per_grid, max_threads >> > (cudaArrays, shoal->params, deltaTime, models);
 
-	// POSITIONS & VELOCITIES -----------------------------------------------
-	calculateBoidsKernel << <blocks_per_grid, max_threads >> > (cudaArrays, shoal->params, deltaTime, x, y);
-
-	cudaMemcpy(shoal->positions, cudaArrays.positions_bb, vec_size, cudaMemcpyDeviceToHost);
-	cudaMemcpy(shoal->velocities, cudaArrays.velocities_bb, vec_size, cudaMemcpyDeviceToHost);
-
-	cudaMemcpy(host_model, cudaArrays.models, mat_size, cudaMemcpyDeviceToHost);
-	glBufferData(GL_ARRAY_BUFFER, mat_size, host_model, GL_DYNAMIC_DRAW);
-
-	free(host_model);
-	//free(grid_boids_cpu);
-	//free(grid_cpu);
-	//delete[] starts;
-	//delete[] sizes;
+	cudaGraphicsUnmapResources(1, &cudaVBO, 0);
 }

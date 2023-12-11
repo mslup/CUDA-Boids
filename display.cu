@@ -2,10 +2,9 @@
 
 GLFWwindow* window;
 
-unsigned int VBO, VAO;
+unsigned int vertexVBO, VAO;
 unsigned int modelVBO;
-
-//__global__ void kernel_tmp(glm::mat3* models);
+struct cudaGraphicsResource* cudaVBO;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -68,12 +67,12 @@ GLFWwindow* initWindow()
 
 void create_buffer_objects(cpu_shoal* shoal)
 {
-	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &vertexVBO);
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 
 	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->params.vertices), shoal->params.vertices, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
 
