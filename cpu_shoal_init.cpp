@@ -2,41 +2,52 @@
 
 cpu_shoal::cpu_shoal()
 {
-	height = 0.04f;
-	width = 0.02f;
+	params.height = 0.04f;
+	params.width = 0.02f;
 
-	s = 0.01;//3e-2;
-	a = 0.1;//8e-2;
-	c = 0.01;//9e-2;
+	params.vertices[0] = params.height / 2;
+	params.vertices[1] = 0;
+	params.vertices[2] = -params.height / 2;
+	params.vertices[3] = -params.width / 2;
+	params.vertices[4] = -params.height / 2;
+	params.vertices[5] = params.width / 2;
 
-	margin = 0.2f;
-	turn = 5e-3;
+	params.s = 0.001;
+	params.a = 0.1;
+	params.c = 0.005;
 
-	max_speed = 1e-2;
-	min_speed = 9e-3;
+	params.margin = 0.2f;
+	params.turn = 5e-4;
 
-	visibility_radius = 1e-1;
+	params.max_speed = 0.9;
+	params.min_speed = 0.1;
 
-	glm::vec2 center(0, 0);
-	vertices[0] = center.x + height / 2, center.y;
-	vertices[1] = center.x - height / 2, center.y - width / 2;
-	vertices[2] = center.x - height / 2, center.y + width / 2;
+	params.visibility_radius = 1e-1;
 
 	init_positions();
 	init_velocities();
 	for (int i = 0; i < N; i++)
 	{
-		model[i] = calculate_rotate(positions[i], velocities[i]);
+		models[i] = calculate_rotate(positions[i], velocities[i]);
 	}
 }
 
 void cpu_shoal::init_positions()
 {
+	float offset = 2.0f / glm::sqrt(N);
+
 	for (int i = 0; i < N; i++)
 	{
-		positions[i].x = (float)(rand()) / (float)(RAND_MAX)-0.5;
-		positions[i].y = (float)(rand()) / (float)(RAND_MAX)-0.5;
+		positions[i].x = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
+		positions[i].y = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
 	}
+
+	//for (int i = 0; i < 8; i++)
+	//	for (int j = 0; j < 8; j++)
+	//	{
+	//		positions[8 * i + j].x = -1 + i * offset;
+	//		positions[8 * i + j].y = -1 + j * offset;
+	//	}
 
 	std::memcpy(positions_bb, positions, N * sizeof(glm::vec2));
 }

@@ -7,17 +7,17 @@ glm::mat3 cpu_shoal::calculate_rotate(glm::vec2 pos, glm::vec2 vel)
 	return glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(pos, 1.0f));
 }
 
-void cpu_shoal::update_boids()
+void cpu_shoal::update_boids(double d)
 {
 	for (int i = 0; i < N; ++i)
 	{
 		apply_boid_rules(i);
 		turn_from_wall(i);
 		speed_limit(i);
-		positions_bb[i] += velocities_bb[i];
+		positions_bb[i] += (float)d * velocities_bb[i];
 		teleport_through_wall(i);
 
-		model[i] = calculate_rotate(positions_bb[i], velocities_bb[i]);
+		models[i] = calculate_rotate(positions_bb[i], velocities_bb[i]);
 	}
 
 	std::memcpy(velocities, velocities_bb, N * sizeof(glm::vec2));
@@ -27,7 +27,7 @@ void cpu_shoal::update_boids()
 void cpu_shoal::calculate_all_models()
 {
 	for (int i = 0; i < N; i++)
-		model[i] = calculate_rotate(positions[i], velocities[i]);
+		models[i] = calculate_rotate(positions[i], velocities[i]);
 }
 
 void cpu_shoal::apply_boid_rules(int i)
@@ -40,7 +40,7 @@ void cpu_shoal::apply_boid_rules(int i)
 	for (int j = 0; j < N; ++j)
 	{
 		float len = glm::length(positions[i] - positions[j]);
-		if (i != j && len < visibility_radius)
+		if (i != j && len < params.visibility_radius)
 		{
 			separation_component += positions[i] - positions[j];
 			velocity_sum += velocities[j];
@@ -61,7 +61,9 @@ void cpu_shoal::apply_boid_rules(int i)
 	alignment_component = velocity_sum - velocities[i];
 	cohesion_component = position_sum - positions[i];
 
-	velocities_bb[i] += s * separation_component + a * alignment_component + c * cohesion_component;
+	velocities_bb[i] += params.s * separation_component 
+		+ params.a * alignment_component 
+		+ params.c * cohesion_component;
 }
 
 void cpu_shoal::turn_from_wall(int i)
@@ -73,22 +75,22 @@ void cpu_shoal::turn_from_wall(int i)
 
 	float len = glm::length(velocities_bb[i]);
 
-	if (dx_right < margin)
-		velocities_bb[i].x -= turn * len / (dx_right * dx_right);
-	if (dx_left < margin)
-		velocities_bb[i].x += turn * len / (dx_left * dx_left);
-	if (dy_up < margin)
-		velocities_bb[i].y -= turn * len / (dy_up * dy_up);
-	if (dy_down < margin)
-		velocities_bb[i].y += turn * len / (dy_down * dy_down);
+	if (dx_right < params.margin)
+		velocities_bb[i].x -= params.turn * len / (dx_right * dx_right);
+	if (dx_left < params.margin)
+		velocities_bb[i].x += params.turn * len / (dx_left * dx_left);
+	if (dy_up < params.margin)
+		velocities_bb[i].y -= params.turn * len / (dy_up * dy_up);
+	if (dy_down < params.margin)
+		velocities_bb[i].y += params.turn * len / (dy_down * dy_down);
 }
 
 void cpu_shoal::speed_limit(int i)
 {
-	if (glm::length(velocities_bb[i]) < min_speed)
-		velocities_bb[i] = min_speed * glm::normalize(velocities_bb[i]);
-	if (glm::length(velocities_bb[i]) > max_speed)
-		velocities_bb[i] = max_speed * glm::normalize(velocities_bb[i]);
+	if (glm::length(velocities_bb[i]) < params.min_speed)
+		velocities_bb[i] = params.min_speed * glm::normalize(velocities_bb[i]);
+	if (glm::length(velocities_bb[i]) > params.max_speed)
+		velocities_bb[i] = params.max_speed * glm::normalize(velocities_bb[i]);
 }
 
 void cpu_shoal::teleport_through_wall(int i)

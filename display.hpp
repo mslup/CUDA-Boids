@@ -1,17 +1,11 @@
 #include "framework.h"
 
 #pragma once
-//
-//#ifndef GLOBALS
-//#define GLOBALS
 
-
-//extern unsigned int VBO, VAO;
-//extern unsigned int rotateVBO;
-//extern cpu_shoal* shoal;
-
-//#endif 
-
+extern GLFWwindow* window;
+extern unsigned int vertexVBO, VAO;
+extern unsigned int modelVBO;
+extern struct cudaGraphicsResource* cudaVBO;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
@@ -21,7 +15,7 @@ void showError();
 
 GLFWwindow* initWindow();
 
-//void create_buffer_objects();
-//
-//void render();
+void create_buffer_objects(cpu_shoal* shoal);
+
+void render(cpu_shoal *shoal);
 

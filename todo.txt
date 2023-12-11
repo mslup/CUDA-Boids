@@ -1,0 +1,16 @@
+- check for errors
+- refactor 
+- sciezki wykonania takie smae dla watkow
+- if odleglosc = 0 separation edge case
+
+check:
+- cuda opengl interop
+- niech sie nie sklejaja debile
+- pause
+- fps
+- grid
+- deltatime w pozycji czy w welocycji?
+- malloc before loop
+
+wontfix:
+- shared memory??
