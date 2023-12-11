@@ -3,8 +3,9 @@
 #pragma once
 
 extern GLFWwindow* window;
-extern unsigned int VBO, VAO;
+extern unsigned int vertexVBO, VAO;
 extern unsigned int modelVBO;
+extern struct cudaGraphicsResource* cudaVBO;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 

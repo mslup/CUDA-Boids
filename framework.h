@@ -15,7 +15,7 @@
 #include <thrust/sort.h>
 #include <thrust/execution_policy.h>
 
-//#include <cuda_gl_interop.h>
+#include <cuda_gl_interop.h>
 
 #include "ImGUI/imgui.h"
 #include "ImGUI/imgui_impl_glfw.h"

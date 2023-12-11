@@ -241,7 +241,7 @@ __global__ void calculateGridStartsKernel(struct cudaArrays soa)
 	}
 }
 
-__global__ void calculateBoidsKernel(cudaArrays soa, cpu_shoal::paramsStruct params, double d, float x, float y)
+__global__ void calculateBoidsKernel(cudaArrays soa, cpu_shoal::paramsStruct params, double d, glm::mat3 *models)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -296,5 +296,5 @@ __global__ void calculateBoidsKernel(cudaArrays soa, cpu_shoal::paramsStruct par
 
 	glm::vec2 v = glm::normalize(soa.velocities[i]);
 	glm::vec2 vT = glm::vec2(v.y, -v.x);
-	soa.models[i] = glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(soa.positions[i], 1.0f));
+	models[i] = glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(soa.positions[i], 1.0f));
 }
