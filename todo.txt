@@ -1,11 +1,15 @@
-- check for errors
 - cuda opengl interop
+- check for errors
 - refactor 
-- fps
-- grid
-- shared memory??
-- deltatime w pozycji czy w welocycji?
-- malloc before loop
+- sciezki wykonania takie smae dla watkow
+
+check:
 - niech sie nie sklejaja debile
 - pause
-- sciezki wykonania takie smae dla watkow
+- fps
+- grid
+- deltatime w pozycji czy w welocycji?
+- malloc before loop
+
+wontfix:
+- shared memory??

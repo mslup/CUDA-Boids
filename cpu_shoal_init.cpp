@@ -12,7 +12,7 @@ cpu_shoal::cpu_shoal()
 	params.vertices[4] = -params.height / 2;
 	params.vertices[5] = params.width / 2;
 
-	params.s = 0.01;
+	params.s = 0.001;
 	params.a = 0.1;
 	params.c = 0.005;
 
@@ -56,8 +56,8 @@ void cpu_shoal::init_velocities()
 {
 	for (int i = 0; i < N; i++)
 	{
-		velocities[i].x = 0;//((float)(rand()) / (float)(RAND_MAX)-0.5);
-		velocities[i].y = 1;//((float)(rand()) / (float)(RAND_MAX)-0.5);
+		velocities[i].x = ((float)(rand()) / (float)(RAND_MAX)-0.5);
+		velocities[i].y = ((float)(rand()) / (float)(RAND_MAX)-0.5);
 	}
 
 	std::memcpy(velocities_bb, velocities, N * sizeof(glm::vec2));

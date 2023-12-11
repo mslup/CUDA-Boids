@@ -33,7 +33,6 @@ __device__ void iterate_through_cell(const cudaArrays& soa, int cell, int i, boi
 	glm::vec2* vel = soa.velocities;
 	int* grid_starts = soa.grid_starts;
 	int* grid_cells = soa.grid_cells;
-	int* grid_cellsizes = soa.grid_cellsizes;
 	int* grid_ends = soa.grid_ends;
 	int* boids = soa.grid_boids;
 
@@ -52,13 +51,15 @@ __device__ void iterate_through_cell(const cudaArrays& soa, int cell, int i, boi
 		int j = boids[k];
 		if (i == j) continue;
 
-		glm::vec2 diff = pos[i] - pos[boids[k]];
-		float lensq = glm::dot(diff, diff);
+		glm::vec2 diff = pos[i] - pos[j];
+		//float lensq = glm::dot(diff, diff);
+		float len = glm::length(diff);
+		glm::vec2 norm = glm::normalize(diff);
 
-		if (lensq < radius_sq)
+		if (len < R)//)lensq < radius_sq)
 		{
       //soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
-			(*boidParams.separation_component) += pos[i] - pos[j];
+			(*boidParams.separation_component) += norm / len;
 			(*boidParams.velocity_sum) += vel[j];
 			(*boidParams.position_sum) += pos[j];
 			(*boidParams.neighbors)++;
@@ -73,7 +74,6 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 	glm::vec2* vel = soa.velocities;
 	int* grid_starts = soa.grid_starts;
 	int* grid_cells = soa.grid_cells;
-	int* grid_cellsizes = soa.grid_cellsizes;
 	int* boids = soa.grid_boids;
 
 	glm::vec2 separation_component(0, 0);
@@ -285,23 +285,15 @@ __global__ void calculateBoidsKernel(cudaArrays soa, cpu_shoal::paramsStruct par
 	new_pos = teleport_through_wall(new_pos);
 
 	soa.positions_bb[i] = new_pos;
+
+	if (new_pos.x < -1 || new_pos.x > 1 || new_pos.y < -1 || new_pos.y > 1)
+		printf("%f, %f\n", new_pos.x, new_pos.y);
 #endif
+	__syncthreads();
 
+	soa.positions[i] = soa.positions_bb[i];
+	soa.velocities[i] = soa.velocities_bb[i];
 
-
-
-
-	//syncthreads instead of two kernels
-}
-
-__global__ void calculateModelKernel(cudaArrays soa)
-{
-	int i = threadIdx.x + blockIdx.x * blockDim.x;
-
-	if (i >= N)
-		return;
-
-	// calculate model matrix
 	glm::vec2 v = glm::normalize(soa.velocities[i]);
 	glm::vec2 vT = glm::vec2(v.y, -v.x);
 	soa.models[i] = glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(soa.positions[i], 1.0f));

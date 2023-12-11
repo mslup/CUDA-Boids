@@ -15,6 +15,8 @@ void gpu(cpu_shoal*, double);
 //todo: not global
 struct cudaArrays cudaArrays;
 
+bool pause = false;
+
 int main()
 {
 
@@ -51,7 +53,6 @@ int main()
 	cudaMalloc(&cudaArrays.grid_cells, int_size);
 	cudaMalloc(&cudaArrays.grid_boids, int_size);
 	cudaMalloc(&cudaArrays.grid_starts, grid_size);
-	cudaMalloc(&cudaArrays.grid_cellsizes, grid_size);
 	cudaMalloc(&cudaArrays.grid_ends, grid_size);
 #endif
 
@@ -73,8 +74,14 @@ int main()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
+		if (ImGui::Button("Pause"))
+		{
+			pause = !pause;
+		}
+
+
 		ImGui::SliderFloat("cohesion", &shoal->params.c, 0.0f, 0.5f);
-		ImGui::SliderFloat("separation", &shoal->params.s, 0.0f, 0.5f);
+		ImGui::SliderFloat("separation", &shoal->params.s, 0.0f, 0.1f);
 		ImGui::SliderFloat("alignment", &shoal->params.a, 0.0f, 0.5f);
 		ImGui::SliderFloat("max_speed", &shoal->params.max_speed, 0.5f, 1.0f);
 		ImGui::SliderFloat("min_speed", &shoal->params.min_speed, 0.0f, 0.5f);
@@ -97,12 +104,15 @@ int main()
 		glBindVertexArray(VAO);
 		glBindBuffer(GL_ARRAY_BUFFER, modelVBO);
 
+		if (!pause)
+		{
 #ifdef CPU
 		shoal->update_boids(deltaTime);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->models), &(shoal->models)[0], GL_DYNAMIC_DRAW);
 #else
 		gpu(shoal, deltaTime);
 #endif
+		}
 
 		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, N);
 		showError();
@@ -130,7 +140,6 @@ int main()
 	cudaFree(cudaArrays.grid_cells);
 	cudaFree(cudaArrays.grid_boids);
 	cudaFree(cudaArrays.grid_starts);
-	cudaFree(cudaArrays.grid_cellsizes);
 	cudaFree(cudaArrays.grid_ends);
 
 	//TODO: tu powinno byc jakies zwalnianie cudy
@@ -141,8 +150,6 @@ int main()
 
 void gpu(cpu_shoal* shoal, double deltaTime)
 {
-
-
 	static float x = 0, static float y = 0;
 	ImGui::SliderFloat("x", &x, -1.0f, 1.0f);
 	ImGui::SliderFloat("y", &y, -1.0f, 1.0f);
@@ -163,7 +170,6 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 	cudaMemset(cudaArrays.grid_boids, 0, int_size);
 	cudaMemset(cudaArrays.grid_cells, 0, int_size);
 	cudaMemset(cudaArrays.grid_starts, -1, grid_size);
-	cudaMemset(cudaArrays.grid_cellsizes, 0, grid_size);	
 	cudaMemset(cudaArrays.grid_ends, -1, grid_size);	
 
 	const int max_threads = 1024;
@@ -176,57 +182,8 @@ void gpu(cpu_shoal* shoal, double deltaTime)
 
 	calculateGridStartsKernel << <blocks_per_grid, max_threads >> > (cudaArrays);
 
-	/*
-	int* grid_cpu = (int*)malloc(int_size);
-	cudaMemcpy(grid_cpu, cudaArrays.grid_cells, int_size, cudaMemcpyDeviceToHost);
-	int* grid_boids_cpu = (int*)malloc(int_size);
-	cudaMemcpy(grid_boids_cpu, cudaArrays.grid_boids, int_size, cudaMemcpyDeviceToHost);
-
-	//TODO: do this on gpu
-	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
-	size_t size = density * density;
-	size_t num_bytes = size * sizeof(int);
-
-	int* starts = new int[size];
-	int* sizes = new int[size];
-	std::memset(starts, -1, num_bytes);
-	std::memset(sizes, 0, num_bytes);
-
-	int start_index = 0;
-	int current_cell = 0;
-	int len = 1;
-	int i = 0;
-	
-	while (i < N)
-	{
-		int current_cell = grid_cpu[i];
-		int start_index = i;
-		int len = 1;
-
-		while (i + 1 < N && grid_cpu[i] == grid_cpu[i + 1]) {
-			len++;
-			i++;
-		}
-
-		sizes[current_cell] = len;
-		starts[current_cell] = start_index;
-
-		//std::cout << current_cell << ": " << starts[current_cell] << " " << sizes[current_cell] << std::endl;
-		i++;
-	}
-
-	cudaMemcpy(cudaArrays.grid_starts, starts, num_bytes, cudaMemcpyHostToDevice);
-	cudaMemcpy(cudaArrays.grid_cellsizes, sizes, num_bytes, cudaMemcpyHostToDevice);
-	*/
-
 	// POSITIONS & VELOCITIES -----------------------------------------------
 	calculateBoidsKernel << <blocks_per_grid, max_threads >> > (cudaArrays, shoal->params, deltaTime, x, y);
-
-	cudaMemcpy(cudaArrays.positions, cudaArrays.positions_bb, vec_size, cudaMemcpyDeviceToDevice);
-	cudaMemcpy(cudaArrays.velocities, cudaArrays.velocities_bb, vec_size, cudaMemcpyDeviceToDevice);
-
-	// MODEL MATRICES -------------------------------------------------------
-	calculateModelKernel << <blocks_per_grid, max_threads >> > (cudaArrays);
 
 	cudaMemcpy(shoal->positions, cudaArrays.positions_bb, vec_size, cudaMemcpyDeviceToHost);
 	cudaMemcpy(shoal->velocities, cudaArrays.velocities_bb, vec_size, cudaMemcpyDeviceToHost);
