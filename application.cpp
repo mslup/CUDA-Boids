@@ -26,16 +26,8 @@ Application::Application()
 		boidColor.g / 255.0f,
 		boidColor.b / 255.0f);
 
-	glm::mat4 view = glm::mat4(1);
-	view = glm::translate(view, glm::vec3(0, 0, -3));
-	shader->setMat4("view", view);
-
-	glm::mat4 proj = glm::mat4(1.0);
-	proj = glm::perspective(glm::radians(45.0f), (float)window->width / (float)window->height, 0.0f, 100.0f);
-	shader->setMat4("projection", proj);
-
 	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
-	size_t grid_size = density * density * sizeof(int);
+	size_t grid_size = density * density * density * sizeof(int);
 
 	cudaMalloc(&soa.models, mat_size);
 	cudaMalloc(&soa.positions, vec_size);
@@ -50,6 +42,29 @@ Application::Application()
 	cudaMemcpy(soa.positions, shoal->positions, vec_size, cudaMemcpyHostToDevice);
 	cudaMemcpy(soa.velocities, shoal->velocities, vec_size, cudaMemcpyHostToDevice);
 #endif
+}
+
+Application::~Application()
+{
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+	glfwTerminate();
+
+	delete shoal;
+	cudaFree(soa.models);
+	cudaFree(soa.positions);
+	cudaFree(soa.positions_bb);
+	cudaFree(soa.velocities);
+	cudaFree(soa.velocities_bb);
+	cudaFree(soa.grid_cells);
+	cudaFree(soa.grid_boids);
+	cudaFree(soa.grid_starts);
+	cudaFree(soa.grid_ends);
+
+	if (cudaDeviceReset() != cudaSuccess) {
+		fprintf(stderr, "cudaDeviceReset failed!");
+	}
 }
 
 void Application::initValues()
@@ -98,15 +113,14 @@ void Application::run()
 		cudaGraphicsGLRegisterBuffer(&vao->cudaVBO, vao->modelVBO, cudaGraphicsMapFlagsWriteDiscard);
 
 		if (!pause)
+		{
 			update();
+			pause = true;
+		}
 
-		glm::mat4 view;
-		//view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-		view = camera->GetViewMatrix();
-		shader->setMat4("view", view);
+		shader->setMat4("projection", camera->GetProjectionMatrix(window->width, window->height));
+		shader->setMat4("view", camera->GetViewMatrix());
 
-		//glDrawArraysInstanced()
-		//glDrawArraysInstanced(GL_TRIANGLES, 0, Shoal::vertexCount, N);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vao->vertexEBO);
 		glDrawElementsInstanced(GL_TRIANGLES, Shoal::vertexCount, GL_UNSIGNED_INT, 0, N);
 
@@ -115,29 +129,6 @@ void Application::run()
 
 		glfwSwapBuffers(window->wndptr);
 		glfwPollEvents();
-	}
-}
-
-Application::~Application()
-{
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-	glfwTerminate();
-
-	delete shoal;
-	cudaFree(soa.models);
-	cudaFree(soa.positions);
-	cudaFree(soa.positions_bb);
-	cudaFree(soa.velocities);
-	cudaFree(soa.velocities_bb);
-	cudaFree(soa.grid_cells);
-	cudaFree(soa.grid_boids);
-	cudaFree(soa.grid_starts);
-	cudaFree(soa.grid_ends);
-
-	if (cudaDeviceReset() != cudaSuccess) {
-		fprintf(stderr, "cudaDeviceReset failed!");
 	}
 }
 
@@ -204,7 +195,7 @@ void Application::create_buffer_objects()
 	glVertexAttribDivisor(4, 1);
 }
 
-void Application::updateCamera(float xoffset, float yoffset)
+void Application::updateCameraAngles(float xoffset, float yoffset)
 {
 	float sensitivity = 0.1f; // change this value to your liking
 	xoffset *= sensitivity;

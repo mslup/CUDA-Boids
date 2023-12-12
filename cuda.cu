@@ -1,21 +1,26 @@
 #include "framework.h"
 #include <stdio.h>
 
-#define NAIVE
+//#define NAIVE
+#define SNAP_TO_GRID
 
 // todo: add declarations in cuh; reclamp 
 __device__ int calculate_grid_index(glm::vec3 pos)
 {
 	int gridX = (int)glm::floor((pos.x - LEFT_WALL) / GRID_R);
 	int gridY = (int)glm::floor((pos.y - DOWN_WALL) / GRID_R);
+	int gridZ = (int)glm::floor((pos.z - BACK_WALL) / GRID_R);
 
 	//printf("(%f - %f) / %f = %f | %d\n", pos.x, LEFT_WALL, GRID_R, (pos.x - LEFT_WALL) / GRID_R, gridX);
 
 	int gridSize = (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	gridX = glm::clamp(gridX, 0, gridSize - 1);
 	gridY = glm::clamp(gridY, 0, gridSize - 1);
+	gridZ = glm::clamp(gridZ, 0, gridSize - 1);
 
-	return gridY * gridSize + gridX;
+	return gridZ * gridSize * gridSize
+		+ gridY * gridSize
+		+ gridX;
 }
 
 struct boidParamsStruct {
@@ -52,17 +57,19 @@ __device__ void iterate_through_cell(const cudaArrays& soa, int cell, int i, boi
 		if (i == j) continue;
 
 		glm::vec3 diff = pos[i] - pos[j];
-		//float lensq = glm::dot(diff, diff);
 		float len = glm::length(diff);
 		glm::vec3 norm = glm::normalize(diff);
 
-		if (len < MIN_R)//)lensq < radius_sq)
+		if (len < MIN_R)
 		{
-      //soa.velocities_bb[boids[k]] = glm::vec3(1, 0);
+			soa.velocities_bb[boids[k]] = glm::vec3(0, 0, 1);
+
+			/*
 			(*boidParams.separation_component) += norm / len;
 			(*boidParams.velocity_sum) += vel[j];
 			(*boidParams.position_sum) += pos[j];
 			(*boidParams.neighbors)++;
+			*/
 		}
 	}
 }
@@ -109,39 +116,40 @@ __device__ glm::vec3 apply_boid_rules(cudaArrays soa, const Shoal::paramsStruct&
 	int density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	int cell = calculate_grid_index(pos[i]);
 	int gridX = cell % density;
-	int gridY = cell / density;
+	int gridY = (cell / density) % density;
+	int gridZ = cell / (density * density);
 
 	// todo: calculate this beforehand? sort a duplicate buffer?
-	int start_offset, horizontal_offset, vertical_offset;
+	int start_offset, x_offset, y_offset, z_offset;
 
 	if (pos[i].x >= LEFT_WALL + (gridX + 0.5) * GRID_R)
 	{
 		start_offset = 0;
-		horizontal_offset = 1;
+		x_offset = 1;
 	}
 	else
 	{
 		start_offset = -1;
-		horizontal_offset = -1;
+		x_offset = -1;
 	}
 
 	if (pos[i].y >= DOWN_WALL + (gridY + 0.5) * GRID_R)
-		vertical_offset = density;
+		y_offset = density;
 	else
-		vertical_offset = -density;
+		y_offset = -density;
 
 	iterate_through_cell(soa, cell, i, boidParams);
 
-	if ((cell + horizontal_offset) / density == cell / density)
-		iterate_through_cell(soa, cell + horizontal_offset, i, boidParams);
+	if ((cell + x_offset) / density == cell / density)
+		iterate_through_cell(soa, cell + x_offset, i, boidParams);
 
-	if (cell + vertical_offset >= 0 && cell + vertical_offset < density * density)
-		iterate_through_cell(soa, cell + vertical_offset, i, boidParams);
+	if (cell + y_offset >= 0 && cell + y_offset < density * density)
+		iterate_through_cell(soa, cell + y_offset, i, boidParams);
 
-	if (cell + vertical_offset + horizontal_offset >= 0
-		&& cell + vertical_offset + horizontal_offset < density * density
-		&& (cell + vertical_offset + horizontal_offset) / density == (cell + vertical_offset) / density)
-		iterate_through_cell(soa, cell + vertical_offset + horizontal_offset, i, boidParams);
+	if (cell + y_offset + x_offset >= 0
+		&& cell + y_offset + x_offset < density * density
+		&& (cell + y_offset + x_offset) / density == (cell + y_offset) / density)
+		iterate_through_cell(soa, cell + y_offset + x_offset, i, boidParams);
 #endif
 
 	glm::vec3 alignment_component;
@@ -222,16 +230,26 @@ __device__ glm::vec3 teleport_through_wall(glm::vec3 pos)
 	return ret;
 }
 
-__global__ void calculateGridKernel(cudaArrays soa)
+__global__ void calculateGridKernel(struct cudaArrays soa)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 
 	if (i >= Application::N)
 		return;
 
+	//printf("calculate grid\n");
+
+	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	size_t grid_size = density * density * density * sizeof(int);
+
+	//printf("grid size %d\n", grid_size);
+	//printf("zjeb %d\n", i);
+
+	//int d = soa.grid_cells[i];
+
 	soa.grid_cells[i] = calculate_grid_index(soa.positions[i]);
 	soa.grid_boids[i] = i;
-
+	
 	// these are getting sorted later
 }
 
@@ -242,11 +260,19 @@ __global__ void calculateGridStartsKernel(struct cudaArrays soa)
 	if (i >= Application::N)
 		return;
 
+	//printf("calculate grid starts\n");
+
 	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
-	size_t grid_size = density * density * sizeof(int);
+	size_t grid_size = density * density * density * sizeof(int);
+
+	//printf("grid_size: %d\n", grid_size);
 
 	int cell = soa.grid_cells[i];
 	int prev_cell = i != 0 ? soa.grid_cells[i - 1] : -1;
+
+	//printf("cell: %d\n", cell);
+
+	/*
 	if (i == 0 || cell != prev_cell)
 	{
 		// todo: there's a bottleneck
@@ -254,39 +280,50 @@ __global__ void calculateGridStartsKernel(struct cudaArrays soa)
 		if (i != 0)
 			soa.grid_ends[prev_cell] = i;
 	}
+	*/
+	//printf("pa pa: %d\n", cell);
 }
 
-__global__ void calculateBoidsKernel(cudaArrays soa, Shoal::paramsStruct params, double d, glm::mat4 *models)
+__global__ void calculateBoidsKernel(struct cudaArrays soa,  Shoal::paramsStruct params, double d, glm::mat4* models)
 {
+	printf("calcualte boids???\n");
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 
 	if (i >= Application::N)
 		return;
+
+	//printf("calcualte boids\n");
+	//printf("%f, %f, %f\n", soa.positions[i].x, soa.positions[i].y, soa.positions[i].z);
+	//printf("%f, %f, %f\n", soa.positions_bb[i].x, soa.positions_bb[i].y, soa.positions_bb[i].z);
 
 #ifdef SNAP_TO_GRID
 	glm::vec3* pos = soa.positions;
 	glm::vec3* vel = soa.velocities;
 	int* grid_starts = soa.grid_starts;
 	int* grid_cells = soa.grid_cells;
-	int* grid_cellsizes = soa.grid_cellsizes;
 	int* boids = soa.grid_boids;
 
 	int cell = calculate_grid_index(pos[i]);
 	int density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
-	int gridX = cell % density;
-	int gridY = cell / density;
+	
+	//int jebanegowno = (int)glm::floor((pos[i].z - LEFT_WALL + 1e-3) / GRID_R);
 
-	gridX = (int)glm::floor((pos[i].x - LEFT_WALL + 1e-3) / GRID_R);
-	gridY = (int)glm::floor((pos[i].y - DOWN_WALL + 1e-3) / GRID_R);
+	/*
+	int gridY = (int)glm::floor((pos[i].y - DOWN_WALL + 1e-3) / GRID_R);
+	*/
+	int gridX = (int)glm::floor((pos[i].x - LEFT_WALL + 1e-3) / GRID_R);
+	int gridZ = (int)glm::floor((pos[i].z - BACK_WALL + 1e-3) / GRID_R);
+	int jebanegowno2 = (int)glm::floor((pos[i].y - DOWN_WALL + 1e-3) / GRID_R);
 
-	if (i != 42)
-	{
-		//soa.positions_bb[i] = glm::vec3(LEFT_WALL + GRID_R * gridX, DOWN_WALL + GRID_R * gridY);
-	}
-	else
-		soa.positions_bb[i] = glm::vec3(x, y);//0.7f * glm::vec3(glm::sin(d), glm::cos(d));
+	//soa.positions_bb[i] = soa.positions[i];
+	//soa.velocities_bb[i] = soa.velocities[i];
 
-	apply_boid_rules(soa, params, i, 1);
+	//soa.positions_bb[i] = glm::vec3(LEFT_WALL + GRID_R * gridX, DOWN_WALL + GRID_R * gridY, 0);//BACK_WALL + GRID_R * gridZ);
+	//else
+		//soa.positions_bb[i] = glm::vec3(x, y, z);//0.7f * glm::vec3(glm::sin(d), glm::cos(d));
+
+	//apply_boid_rules(soa, params, i, 1);
+	
 #else
 	glm::vec3 new_vel;
 
@@ -306,51 +343,16 @@ __global__ void calculateBoidsKernel(cudaArrays soa, Shoal::paramsStruct params,
 #endif
 	__syncthreads();
 
-	soa.positions[i] = soa.positions_bb[i];
-	soa.velocities[i] = soa.velocities_bb[i];
-
-	/*glm::vec3 v = glm::normalize(soa.velocities[i]);
-	glm::vec3 vT = glm::vec3(v.y, -v.x);
-	models[i] = glm::mat4(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(soa.positions[i], 1.0f));*/
-	//models[i] = glm::mat4(glm::vec4(1, 0, 0, 0), glm::vec4(0, 1, 0, 0), glm::vec4(0, 0, 1, 0), glm::vec4(soa.positions[i], 1));
-		
-	/*
-
-	glm::vec3 xaxis = glm::cross(glm::vec3(1, 0, 0), v);
-	xaxis = glm::normalize(xaxis);
-
-	glm::vec3 yaxis = glm::cross(v, xaxis);
-	yaxis = glm::normalize(yaxis);
-
-	models[i] = glm::mat4(
-		glm::vec4(xaxis.x, yaxis.x, v.x, 0),
-		glm::vec4(xaxis.y, yaxis.y, v.y, 0),
-		glm::vec4(xaxis.z, yaxis.z, v.z, 0),
-		glm::vec4(soa.positions[i], 1));*/
-
-	/*
-	float vxz = glm::sqrt(v.x * v.x + v.z * v.z);
-	float vxy = glm::sqrt(v.x * v.x + v.y * v.y);
-
-	float sinAlpha = v.z / vxz;
-	float sinBeta = v.y / vxy;
-	float cosAlpha = v.x / vxz;
-	float cosBeta = v.x / vxy;
-
-	models[i] = glm::mat4(
-		glm::vec4(cosAlpha * cosBeta, sinAlpha * cosBeta, -sinBeta, 0),
-		glm::vec4(-sinAlpha, cosAlpha, 0, 0),
-		glm::vec4(cosAlpha * sinBeta, sinAlpha * sinBeta, cosBeta, 0),
-		glm::vec4(soa.positions[i], 1)
-	);*/
+	//soa.positions[i] = soa.positions_bb[i];
+	//soa.velocities[i] = soa.velocities_bb[i];
 
 	glm::vec3 v = glm::normalize(soa.velocities[i]);
 
 	float c1 = sqrt(v.x * v.x + v.y * v.y);
 	float s1 = v.z;
 
-	float c2 = v.x / c1;
-	float s2 = v.y / c1;
+	float c2 = c1 ? v.x / c1 : 1.0;
+	float s2 = c1 ? v.y / c1 : 0.0;
 
 	models[i] = glm::mat4(
 		glm::vec4(v, 0),
@@ -358,9 +360,13 @@ __global__ void calculateBoidsKernel(cudaArrays soa, Shoal::paramsStruct params,
 		glm::vec4(-s1 * c2, -s1 * s2, c1, 0),
 		glm::vec4(soa.positions[i], 1)
 	);
-
-	//models[i] = glm::mat4(1);
-	//models[i] = glm::translate(models[i], soa.positions[i]);
-	////models[i] = glm::rotate(models[i], glm::sign(v.z) * glm::atan(v.z, v.x), glm::vec3(0, 1, 0)); // yaw
-	//models[i] = glm::rotate(models[i], glm::sign(v.y) * glm::sign(v.x) * glm::atan(v.y, v.x), glm::vec3(0, 0, 1)); // pitch
+	
+	/*
+	models[i] = glm::mat4(
+		glm::vec4(1, 0, 0, 0),
+		glm::vec4(0, 1, 0, 0),
+		glm::vec4(0, 0, 1, 0),
+		glm::vec4(soa.positions[i], 1)
+	);
+	*/
 }

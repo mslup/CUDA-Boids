@@ -114,7 +114,7 @@ void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResour
 	size_t vec_size = Application::N * sizeof(glm::vec3);
 	size_t int_size = Application::N * sizeof(int);
 	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
-	size_t grid_size = density * density * sizeof(int);
+	size_t grid_size = density * density * density * sizeof(int);
 
 	cudaMemset(soa.grid_boids, 0, int_size);
 	cudaMemset(soa.grid_cells, 0, int_size);
@@ -129,6 +129,8 @@ void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResour
 	cudaGraphicsResourceGetMappedPointer((void**)&models, NULL, cudaVBO);
 
 	callKernels(blocks_per_grid, max_threads, d, models, this, soa);
+
+	std::cerr << "o co kurwa chodzi " << std::endl;
 
 	cudaGraphicsUnmapResources(1, &cudaVBO, 0);
 }

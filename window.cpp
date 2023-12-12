@@ -31,7 +31,7 @@ Window::Window(Application *parent)
 
 	glViewport(0, 0, width, height);
 
-	glfwSetInputMode(wndptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(wndptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	glfwSetWindowUserPointer(wndptr, this);
 	glfwSetFramebufferSizeCallback(wndptr, 
@@ -64,7 +64,7 @@ Window::Window(Application *parent)
 			wnd.lastX = xpos;
 			wnd.lastY = ypos;
 
-			wnd.app->updateCamera(xoffset, yoffset);
+			//wnd.app->updateCameraAngles(xoffset, yoffset);
 		});
 
 	glfwSetScrollCallback(wndptr, 

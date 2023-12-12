@@ -25,10 +25,11 @@
 
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 800;
-constexpr float MIN_R = 0.02f;
+constexpr float MIN_R = 0.2f;
 constexpr float GRID_R = 2 * MIN_R;
 constexpr float LEFT_WALL = -1;
 constexpr float DOWN_WALL = -1;
+constexpr float BACK_WALL = -1;
 constexpr float WORLD_WIDTH = 1 - LEFT_WALL;
 
 //todo: move this to a different file

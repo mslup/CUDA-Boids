@@ -64,6 +64,11 @@ public:
         updateCameraVectors();
     }
 
+    glm::mat4 GetProjectionMatrix(float width, float height)
+    {
+        return glm::perspective(glm::radians(45.0f), width / height, 0.0f, 100.0f);
+    }
+
     // returns the view matrix calculated using Euler Angles and the LookAt Matrix
     glm::mat4 GetViewMatrix()
     {

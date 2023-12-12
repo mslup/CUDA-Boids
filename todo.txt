@@ -3,7 +3,7 @@
 - if odleglosc = 0 separation edge case
 - uniform vertices?
 - grid 3d
-- window sees camera
+- camera has projection matrix
 
 check:
 - cuda opengl interop
