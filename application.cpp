@@ -4,34 +4,35 @@ Application::Application()
 {
 	shoal = new Shoal();
 	vao = new VAO();
+	camera = new Camera();
 
 #ifndef CPU
 	cudaSetDevice(0);
 #endif
 
 	srand(time(NULL));
-	window = new Window();
+	window = new Window(this);
 
 	create_buffer_objects();
 
-	Shader shader("./vertex.glsl", "./fragment.glsl");
-	shader.use();
+	shader = new Shader("./vertex.glsl", "./fragment.glsl");
+	shader->use();
 
 #ifdef CPU
-	shader.setFloat3("boidColor", 0.2f, 0.7f, 0.4f);
+	shader->setFloat3("boidColor", 0.2f, 0.7f, 0.4f);
 #else
-	shader.setFloat3("boidColor",
+	shader->setFloat3("boidColor",
 		boidColor.r / 255.0f,
 		boidColor.g / 255.0f,
 		boidColor.b / 255.0f);
 
 	glm::mat4 view = glm::mat4(1);
 	view = glm::translate(view, glm::vec3(0, 0, -3));
-	shader.setMat4("view", view);
+	shader->setMat4("view", view);
 
 	glm::mat4 proj = glm::mat4(1.0);
 	proj = glm::perspective(glm::radians(45.0f), (float)window->width / (float)window->height, 0.0f, 100.0f);
-	shader.setMat4("projection", proj);
+	shader->setMat4("projection", proj);
 
 	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	size_t grid_size = density * density * sizeof(int);
@@ -71,7 +72,7 @@ void Application::run()
 		imGuiFrame();
 
 		double currentTime = glfwGetTime();
-		double deltaTime = currentTime - previousTime;
+		deltaTime = currentTime - previousTime;
 		previousTime = currentTime;
 
 		num_frames++;
@@ -97,7 +98,12 @@ void Application::run()
 		cudaGraphicsGLRegisterBuffer(&vao->cudaVBO, vao->modelVBO, cudaGraphicsMapFlagsWriteDiscard);
 
 		if (!pause)
-			update(deltaTime);
+			update();
+
+		glm::mat4 view;
+		//view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+		view = camera->GetViewMatrix();
+		shader->setMat4("view", view);
 
 		//glDrawArraysInstanced()
 		//glDrawArraysInstanced(GL_TRIANGLES, 0, Shoal::vertexCount, N);
@@ -135,7 +141,6 @@ Application::~Application()
 	}
 }
 
-
 void Application::imGuiFrame()
 {
 	ImGui_ImplOpenGL3_NewFrame();
@@ -156,7 +161,7 @@ void Application::imGuiFrame()
 
 }
 
-void Application::update(double deltaTime)
+void Application::update()
 {
 #ifdef CPU
 	shoal->update_boids_cpu(deltaTime);
@@ -197,4 +202,36 @@ void Application::create_buffer_objects()
 	glVertexAttribDivisor(2, 1);
 	glVertexAttribDivisor(3, 1);
 	glVertexAttribDivisor(4, 1);
+}
+
+void Application::updateCamera(float xoffset, float yoffset)
+{
+	float sensitivity = 0.1f; // change this value to your liking
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
+
+	camera->Yaw += xoffset;
+	camera->Pitch += yoffset;
+
+	// make sure that when pitch is out of bounds, screen doesn't get flipped
+	if (camera->Pitch > 89.0f)
+		camera->Pitch = 89.0f;
+	if (camera->Pitch < -89.0f)
+		camera->Pitch = -89.0f;
+
+	glm::vec3 front;
+	front.x = cos(glm::radians(camera->Yaw)) * cos(glm::radians(camera->Pitch));
+	front.y = sin(glm::radians(camera->Pitch));
+	front.z = sin(glm::radians(camera->Yaw)) * cos(glm::radians(camera->Pitch));
+	camera->Front = glm::normalize(front);
+}
+
+void Application::updateCameraZoom(float yoffset)
+{
+	camera->ProcessMouseScroll(yoffset);
+}
+
+void Application::updateCameraPos(int key)
+{
+	camera->ProcessKeyboard(key, deltaTime);
 }

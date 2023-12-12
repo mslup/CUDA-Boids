@@ -1,6 +1,8 @@
 #ifndef SHADER_H
 #define SHADER_H
 
+// learnopengl.com
+
 #include <glad/glad.h> 
 
 #include <string>

@@ -106,6 +106,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="application.hpp" />
+    <ClInclude Include="camera.hpp" />
     <ClInclude Include="shoal.hpp" />
     <ClInclude Include="cuda.cuh" />
     <ClInclude Include="ImGUI\imconfig.h" />
@@ -118,7 +119,7 @@
     <ClInclude Include="ImGUI\imstb_rectpack.h" />
     <ClInclude Include="ImGUI\imstb_textedit.h" />
     <ClInclude Include="ImGUI\imstb_truetype.h" />
-    <ClInclude Include="shader.h" />
+    <ClInclude Include="shader.hpp" />
     <ClInclude Include="vao.hpp" />
     <ClInclude Include="window.hpp" />
   </ItemGroup>

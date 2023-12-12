@@ -48,7 +48,8 @@ struct cudaArrays {
 #include "vao.hpp"
 #include "window.hpp"
 #include "shoal.hpp"
-#include "shader.h"
+#include "shader.hpp"
+#include "camera.hpp"
 #include "cuda.cuh"
 
 void callKernels(int blocks_per_grid, int max_threads, double deltaTime, glm::mat4* models, Shoal *, cudaArrays);

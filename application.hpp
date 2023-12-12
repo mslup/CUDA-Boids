@@ -1,8 +1,10 @@
 #include "framework.h"
 
 class Shoal;
+class Shader;
 class Window;
 class VAO;
+class Camera;
 
 class Application 
 {
@@ -12,15 +14,22 @@ public:
 
 	void run();
 	
-	constexpr static int N = 200;
+	constexpr static int N = 2000;
 	
+	void updateCamera(float xoffset, float yoffset);
+	void updateCameraZoom(float yoffset);
+	void updateCameraPos(int);
 
 private:
 	Shoal* shoal;
 	Window* window;
 	VAO* vao;
+	Shader *shader;
+	Camera* camera;
 
 	bool pause = false;
+	double deltaTime;
+
 	struct cudaArrays soa;
 
 	const glm::vec3 backColor = glm::vec3(65, 55, 46);//84, 65, 78);
@@ -31,6 +40,6 @@ private:
 
 	void imGuiFrame();
 	void create_buffer_objects();
-	void update(double deltaTime);
+	void update();
 	void initValues();
 };
