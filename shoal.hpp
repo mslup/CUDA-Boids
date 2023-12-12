@@ -13,18 +13,18 @@ public:
 
 	struct paramsStruct params;
 
-	glm::vec2 positions[Application::N];
-	glm::vec2 positions_bb[Application::N];
-	glm::vec2 velocities[Application::N];
-	glm::vec2 velocities_bb[Application::N];
-	glm::mat3 models[Application::N];
+	glm::vec3 positions[Application::N];
+	glm::vec3 positions_bb[Application::N];
+	glm::vec3 velocities[Application::N];
+	glm::vec3 velocities_bb[Application::N];
+	glm::mat4 models[Application::N];
 
 	Shoal();
 
 	void init_positions();
 	void init_velocities();
 
-	glm::mat3 calculate_rotate(glm::vec2 pos, glm::vec2 vel);
+	glm::mat4 calculate_rotate(glm::vec3 pos, glm::vec3 vel);
 
 	void update_boids_cpu(double d);
 	void update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResource* cudaVBO);

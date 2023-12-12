@@ -86,7 +86,6 @@
     <ClCompile Include="application.cpp" />
     <ClCompile Include="shoal.cpp" />
     <ClCompile Include="shoal_init.cpp" />
-    <ClCompile Include="display.cu" />
     <ClCompile Include="framework.h" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="ImGUI\imgui.cpp" />

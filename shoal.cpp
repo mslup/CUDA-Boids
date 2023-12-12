@@ -1,10 +1,11 @@
 #include "framework.h"
 
-glm::mat3 Shoal::calculate_rotate(glm::vec2 pos, glm::vec2 vel)
+glm::mat4 Shoal::calculate_rotate(glm::vec3 pos, glm::vec3 vel)
 {
-	glm::vec2 v = glm::normalize(vel);
-	glm::vec2 vT = glm::vec2(v.y, -v.x);
-	return glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(pos, 1.0f));
+	//glm::vec3 v = glm::normalize(vel);
+	//glm::vec3 vT = glm::vec3(v.y, -v.x, 0); // LUB 1 ???????????
+	//return glm::mat4(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(pos, 1.0f));
+	return glm::mat4(1.0);
 }
 
 void Shoal::update_boids_cpu(double d)
@@ -20,8 +21,8 @@ void Shoal::update_boids_cpu(double d)
 		models[i] = calculate_rotate(positions_bb[i], velocities_bb[i]);
 	}
 
-	std::memcpy(velocities, velocities_bb, Application::N * sizeof(glm::vec2));
-	std::memcpy(positions, positions_bb, Application::N * sizeof(glm::vec2));
+	std::memcpy(velocities, velocities_bb, Application::N * sizeof(glm::vec3));
+	std::memcpy(positions, positions_bb, Application::N * sizeof(glm::vec3));
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(models), &(models)[0], GL_DYNAMIC_DRAW);
 }
@@ -34,9 +35,9 @@ void Shoal::calculate_all_models()
 
 void Shoal::apply_boid_rules(int i)
 {
-	glm::vec2 separation_component(0, 0);
-	glm::vec2 velocity_sum(0, 0);
-	glm::vec2 position_sum(0, 0);
+	glm::vec3 separation_component(0);
+	glm::vec3 velocity_sum(0);
+	glm::vec3 position_sum(0);
 	int neighbors = 0;
 
 	for (int j = 0; j < Application::N; ++j)
@@ -52,8 +53,8 @@ void Shoal::apply_boid_rules(int i)
 		}
 	}
 
-	glm::vec2 alignment_component;
-	glm::vec2 cohesion_component;
+	glm::vec3 alignment_component;
+	glm::vec3 cohesion_component;
 
 	if (neighbors == 0)
 		return;
@@ -109,8 +110,8 @@ void Shoal::teleport_through_wall(int i)
 
 void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResource* cudaVBO)
 {
-	size_t mat_size = Application::N * sizeof(glm::mat3);
-	size_t vec_size = Application::N * sizeof(glm::vec2);
+	size_t mat_size = Application::N * sizeof(glm::mat4);
+	size_t vec_size = Application::N * sizeof(glm::vec3);
 	size_t int_size = Application::N * sizeof(int);
 	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	size_t grid_size = density * density * sizeof(int);
@@ -123,7 +124,7 @@ void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResour
 	const int max_threads = 1024;
 	int blocks_per_grid = (Application::N + max_threads - 1) / max_threads;
 
-	glm::mat3* models;
+	glm::mat4* models;
 	cudaGraphicsMapResources(1, &cudaVBO, 0);
 	cudaGraphicsResourceGetMappedPointer((void**)&models, NULL, cudaVBO);
 

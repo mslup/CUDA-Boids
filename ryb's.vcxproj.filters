@@ -21,9 +21,6 @@
     <ClCompile Include="framework.h">
       <Filter>Header files</Filter>
     </ClCompile>
-    <ClCompile Include="display.cu">
-      <Filter>Source code</Filter>
-    </ClCompile>
     <ClCompile Include="ImGUI\imgui_stdlib.cpp">
       <Filter>ImGUI</Filter>
     </ClCompile>
@@ -120,14 +117,14 @@
     <ClInclude Include="ImGUI\imconfig.h">
       <Filter>ImGUI</Filter>
     </ClInclude>
-    <ClInclude Include="application.hpp">
-      <Filter>Source code</Filter>
-    </ClInclude>
     <ClInclude Include="shoal.hpp">
       <Filter>Source code</Filter>
     </ClInclude>
     <ClInclude Include="window.hpp" />
     <ClInclude Include="vao.hpp" />
+    <ClInclude Include="application.hpp">
+      <Filter>Header files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="todo.txt" />

@@ -25,9 +25,13 @@ Application::Application()
 		boidColor.g / 255.0f,
 		boidColor.b / 255.0f);
 
+	glm::mat4 view = glm::mat4(1);
+	view = glm::translate(view, glm::vec3(0, 0, -3));
+	shader.setMat4("view", view);
+
 	glm::mat4 proj = glm::mat4(1.0);
-	proj = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
-	shader.setMat4("uProjMatrix", proj);
+	proj = glm::perspective(glm::radians(45.0f), (float)window->width / (float)window->height, 0.0f, 100.0f);
+	shader.setMat4("projection", proj);
 
 	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
 	size_t grid_size = density * density * sizeof(int);
@@ -173,13 +177,16 @@ void Application::create_buffer_objects()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->models), shoal->models, GL_DYNAMIC_DRAW);
 
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::mat3), (void*)0);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::mat3), (void*)(sizeof(glm::vec3)));
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
 	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::mat3), (void*)(2 * sizeof(glm::vec3)));
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
 
 	glVertexAttribDivisor(1, 1);
 	glVertexAttribDivisor(2, 1);
 	glVertexAttribDivisor(3, 1);
+	glVertexAttribDivisor(4, 1);
 }

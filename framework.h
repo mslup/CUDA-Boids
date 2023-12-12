@@ -11,6 +11,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #define GLM_FORCE_CUDA
 
 #include <thrust/sort.h>
@@ -32,11 +33,11 @@ constexpr float WORLD_WIDTH = 1 - LEFT_WALL;
 
 //todo: move this to a different file
 struct cudaArrays {
-	glm::mat3* models;
-	glm::vec2* positions;
-	glm::vec2* velocities;
-	glm::vec2* positions_bb;
-	glm::vec2* velocities_bb;
+	glm::mat4* models;
+	glm::vec3* positions;
+	glm::vec3* velocities;
+	glm::vec3* positions_bb;
+	glm::vec3* velocities_bb;
 	int* grid_cells;
 	int* grid_boids;
 	int* grid_starts; // inclusive
@@ -50,6 +51,6 @@ struct cudaArrays {
 #include "shader.h"
 #include "cuda.cuh"
 
-void callKernels(int blocks_per_grid, int max_threads, double deltaTime, glm::mat3* models, Shoal *, cudaArrays);
+void callKernels(int blocks_per_grid, int max_threads, double deltaTime, glm::mat4* models, Shoal *, cudaArrays);
 
 //#define CPU 

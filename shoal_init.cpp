@@ -40,9 +40,10 @@ void Shoal::init_positions()
 	{
 		positions[i].x = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
 		positions[i].y = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
+		positions[i].z = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
 	}
 
-	std::memcpy(positions_bb, positions, Application::N * sizeof(glm::vec2));
+	std::memcpy(positions_bb, positions, Application::N * sizeof(glm::vec3));
 }
 
 void Shoal::init_velocities()
@@ -51,7 +52,8 @@ void Shoal::init_velocities()
 	{
 		velocities[i].x = ((float)(rand()) / (float)(RAND_MAX)-0.5);
 		velocities[i].y = ((float)(rand()) / (float)(RAND_MAX)-0.5);
+		velocities[i].z = 0;
 	}
 
-	std::memcpy(velocities_bb, velocities, Application::N * sizeof(glm::vec2));
+	std::memcpy(velocities_bb, velocities, Application::N * sizeof(glm::vec3));
 }
