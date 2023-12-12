@@ -2,6 +2,8 @@
 - refactor 
 - sciezki wykonania takie smae dla watkow
 - if odleglosc = 0 separation edge case
+- uniform vertices?
+- grid 3d
 
 check:
 - cuda opengl interop

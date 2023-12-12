@@ -83,7 +83,8 @@ void Application::run()
 		}
 		ImGui::Text("%d fps", fps);
 
-		glClearColor(backColor.r / 255.0f,
+		glClearColor(
+			backColor.r / 255.0f,
 			backColor.g / 255.0f,
 			backColor.b / 255.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -98,7 +99,10 @@ void Application::run()
 		if (!pause)
 			update(deltaTime);
 
-		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, N);
+		//glDrawArraysInstanced()
+		//glDrawArraysInstanced(GL_TRIANGLES, 0, Shoal::vertexCount, N);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vao->vertexEBO);
+		glDrawElementsInstanced(GL_TRIANGLES, Shoal::vertexCount, GL_UNSIGNED_INT, 0, N);
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -170,7 +174,11 @@ void Application::create_buffer_objects()
 	glEnableVertexAttribArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, vao->vertexVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->params.vertices), shoal->params.vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	glGenBuffers(1, &vao->vertexEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vao->vertexEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(shoal->params.indices), shoal->params.indices, GL_STATIC_DRAW);
 
 	glGenBuffers(1, &vao->modelVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, vao->modelVBO);

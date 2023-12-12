@@ -2,16 +2,57 @@
 
 Shoal::Shoal()
 {
-
 	params.height = 0.04f;
 	params.width = 0.02f;
 
+	/*
 	params.vertices[0] = params.height / 2;
 	params.vertices[1] = 0;
 	params.vertices[2] = -params.height / 2;
 	params.vertices[3] = -params.width / 2;
 	params.vertices[4] = -params.height / 2;
 	params.vertices[5] = params.width / 2;
+	*/
+
+
+	float sqrt3 = glm::sqrt(3);
+	float a = params.width;
+
+	/*
+	// A
+	params.vertices[0] = params.height;
+	params.vertices[1] = 0;
+	params.vertices[2] = 0;
+	// B
+	params.vertices[3] = 0;
+	params.vertices[4] = -a/ 2;
+	params.vertices[5] = -a * sqrt3 / 6;
+	// C
+	params.vertices[6] = 0;
+	params.vertices[7] = a / 2;
+	params.vertices[8] = -a * sqrt3 / 6;
+	// D
+	params.vertices[9] = 0;
+	params.vertices[10] = 0;
+	params.vertices[11] = a * sqrt3 / 3;
+	*/
+
+	std::array<float, vertexCount> vertices = {
+		params.height,		0,				0,
+		0,			   -a / 2, -a * sqrt3 / 6,
+		0,				a / 2, -a * sqrt3 / 6,
+		0,					0,  a * sqrt3 / 3
+	};
+
+	std::array<float, vertexCount> indices = {
+		0, 1, 2,
+		0, 2, 3,
+		0, 1, 3,
+		1, 2, 3
+	};
+
+	std::copy(vertices.begin(), vertices.end(), params.vertices);
+	std::copy(indices.begin(), indices.end(), params.indices);
 
 	params.s = 0.001;
 	params.a = 0.1;

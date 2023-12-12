@@ -13,6 +13,7 @@ public:
 	void run();
 	
 	constexpr static int N = 200;
+	
 
 private:
 	Shoal* shoal;

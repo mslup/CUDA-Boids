@@ -120,9 +120,13 @@
     <ClInclude Include="shoal.hpp">
       <Filter>Source code</Filter>
     </ClInclude>
-    <ClInclude Include="window.hpp" />
-    <ClInclude Include="vao.hpp" />
     <ClInclude Include="application.hpp">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="window.hpp">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="vao.hpp">
       <Filter>Header files</Filter>
     </ClInclude>
   </ItemGroup>

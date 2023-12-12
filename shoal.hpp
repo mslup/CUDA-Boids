@@ -5,12 +5,15 @@ class Shoal
 {
 public:
 
+	constexpr static int vertexCount = 12;
+
+	// todo: divide params struct into sim params and boid params
 	struct paramsStruct {
 		float s, a, c, margin, turn, max_speed, min_speed, visibility_radius;
 		float height, width;
-		float vertices[6];
+		float vertices[vertexCount];
+		unsigned int indices[vertexCount];
 	};
-
 	struct paramsStruct params;
 
 	glm::vec3 positions[Application::N];
