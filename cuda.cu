@@ -314,10 +314,53 @@ __global__ void calculateBoidsKernel(cudaArrays soa, Shoal::paramsStruct params,
 	models[i] = glm::mat4(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(soa.positions[i], 1.0f));*/
 	//models[i] = glm::mat4(glm::vec4(1, 0, 0, 0), glm::vec4(0, 1, 0, 0), glm::vec4(0, 0, 1, 0), glm::vec4(soa.positions[i], 1));
 		
-	glm::vec3 v = soa.velocities[i];
-	models[i] = glm::mat4(1);
-	models[i] = glm::translate(models[i], soa.positions[i]);
-	models[i] = glm::rotate(models[i], glm::sign(v.z) * glm::atan(v.z, v.x), glm::vec3(0, 1, 0)); // yaw
-	models[i] = glm::rotate(models[i], -glm::sign(v.y) * glm::atan(v.y, v.x), glm::vec3(0, 0, 1)); // pitch
-	//models[i] = glm::mat4(1.0);
+	/*
+
+	glm::vec3 xaxis = glm::cross(glm::vec3(1, 0, 0), v);
+	xaxis = glm::normalize(xaxis);
+
+	glm::vec3 yaxis = glm::cross(v, xaxis);
+	yaxis = glm::normalize(yaxis);
+
+	models[i] = glm::mat4(
+		glm::vec4(xaxis.x, yaxis.x, v.x, 0),
+		glm::vec4(xaxis.y, yaxis.y, v.y, 0),
+		glm::vec4(xaxis.z, yaxis.z, v.z, 0),
+		glm::vec4(soa.positions[i], 1));*/
+
+	/*
+	float vxz = glm::sqrt(v.x * v.x + v.z * v.z);
+	float vxy = glm::sqrt(v.x * v.x + v.y * v.y);
+
+	float sinAlpha = v.z / vxz;
+	float sinBeta = v.y / vxy;
+	float cosAlpha = v.x / vxz;
+	float cosBeta = v.x / vxy;
+
+	models[i] = glm::mat4(
+		glm::vec4(cosAlpha * cosBeta, sinAlpha * cosBeta, -sinBeta, 0),
+		glm::vec4(-sinAlpha, cosAlpha, 0, 0),
+		glm::vec4(cosAlpha * sinBeta, sinAlpha * sinBeta, cosBeta, 0),
+		glm::vec4(soa.positions[i], 1)
+	);*/
+
+	glm::vec3 v = glm::normalize(soa.velocities[i]);
+
+	float c1 = sqrt(v.x * v.x + v.y * v.y);
+	float s1 = v.z;
+
+	float c2 = v.x / c1;
+	float s2 = v.y / c1;
+
+	models[i] = glm::mat4(
+		glm::vec4(v, 0),
+		glm::vec4(-s2, c2, 0, 0),
+		glm::vec4(-s1 * c2, -s1 * s2, c1, 0),
+		glm::vec4(soa.positions[i], 1)
+	);
+
+	//models[i] = glm::mat4(1);
+	//models[i] = glm::translate(models[i], soa.positions[i]);
+	////models[i] = glm::rotate(models[i], glm::sign(v.z) * glm::atan(v.z, v.x), glm::vec3(0, 1, 0)); // yaw
+	//models[i] = glm::rotate(models[i], glm::sign(v.y) * glm::sign(v.x) * glm::atan(v.y, v.x), glm::vec3(0, 0, 1)); // pitch
 }
