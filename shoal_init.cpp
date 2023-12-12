@@ -1,7 +1,8 @@
 #include "framework.h"
 
-cpu_shoal::cpu_shoal()
+Shoal::Shoal()
 {
+
 	params.height = 0.04f;
 	params.width = 0.02f;
 
@@ -26,39 +27,31 @@ cpu_shoal::cpu_shoal()
 
 	init_positions();
 	init_velocities();
-	for (int i = 0; i < N; i++)
+
+	for (int i = 0; i < Application::N; i++)
 	{
 		models[i] = calculate_rotate(positions[i], velocities[i]);
 	}
 }
 
-void cpu_shoal::init_positions()
+void Shoal::init_positions()
 {
-	float offset = 2.0f / glm::sqrt(N);
-
-	for (int i = 0; i < N; i++)
+	for (int i = 0; i < Application::N; i++)
 	{
 		positions[i].x = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
 		positions[i].y = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
 	}
 
-	//for (int i = 0; i < 8; i++)
-	//	for (int j = 0; j < 8; j++)
-	//	{
-	//		positions[8 * i + j].x = -1 + i * offset;
-	//		positions[8 * i + j].y = -1 + j * offset;
-	//	}
-
-	std::memcpy(positions_bb, positions, N * sizeof(glm::vec2));
+	std::memcpy(positions_bb, positions, Application::N * sizeof(glm::vec2));
 }
 
-void cpu_shoal::init_velocities()
+void Shoal::init_velocities()
 {
-	for (int i = 0; i < N; i++)
+	for (int i = 0; i < Application::N; i++)
 	{
 		velocities[i].x = ((float)(rand()) / (float)(RAND_MAX)-0.5);
 		velocities[i].y = ((float)(rand()) / (float)(RAND_MAX)-0.5);
 	}
 
-	std::memcpy(velocities_bb, velocities, N * sizeof(glm::vec2));
+	std::memcpy(velocities_bb, velocities, Application::N * sizeof(glm::vec2));
 }

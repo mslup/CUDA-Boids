@@ -8,7 +8,6 @@
 #include <sstream>
 #include <iostream>
 
-
 class Shader
 {
 public:
@@ -111,15 +110,34 @@ public:
     {
         glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
     }
+    void setFloat2(const std::string& name, float x, float y) const
+    {
+        glUniform2f(glGetUniformLocation(ID, name.c_str()), x, y);
+    }
     void setFloat3(const std::string& name, float x, float y, float z) const
     {
         glUniform3f(glGetUniformLocation(ID, name.c_str()), x, y, z);
+    }
+    void setFloat4(const std::string& name, float x, float y, float z, float w) const
+    {
+        glUniform4f(glGetUniformLocation(ID, name.c_str()), x, y, z, w);
     }
     void setVec2(const std::string& name, glm::vec2 v)
     {
         glUniform2f(glGetUniformLocation(ID, name.c_str()), v.x, v.y);
     }
-
+    void setVec3(const std::string& name, glm::vec3 v)
+    {
+        glUniform3f(glGetUniformLocation(ID, name.c_str()), v.x, v.y, v.z);
+    }
+    void setVec4(const std::string& name, glm::vec4 v)
+    {
+        glUniform4f(glGetUniformLocation(ID, name.c_str()), v.x, v.y, v.z, v.w);
+    }
+    void setMat4(const std::string& name, glm::mat4 mat)
+    {
+        glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+    }
 };
 
 #endif

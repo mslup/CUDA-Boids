@@ -10,6 +10,7 @@
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
 #define GLM_FORCE_CUDA
 
 #include <thrust/sort.h>
@@ -21,20 +22,13 @@
 #include "ImGUI/imgui_impl_glfw.h"
 #include "ImGUI/imgui_impl_opengl3.h"
 
-constexpr int N = 5000;
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 800;
-constexpr float R = 0.02f;
-constexpr float GRID_R = 2 * R;
+constexpr float MIN_R = 0.02f;
+constexpr float GRID_R = 2 * MIN_R;
 constexpr float LEFT_WALL = -1;
 constexpr float DOWN_WALL = -1;
 constexpr float WORLD_WIDTH = 1 - LEFT_WALL;
-
-#include "shader.h"
-#include "cpu_shoal.hpp"
-#include "display.hpp"
-#include "cuda.cuh"
-
 
 //todo: move this to a different file
 struct cudaArrays {
@@ -48,5 +42,14 @@ struct cudaArrays {
 	int* grid_starts; // inclusive
 	int* grid_ends; // exclusive
 };
+
+#include "application.hpp"
+#include "vao.hpp"
+#include "window.hpp"
+#include "shoal.hpp"
+#include "shader.h"
+#include "cuda.cuh"
+
+void callKernels(int blocks_per_grid, int max_threads, double deltaTime, glm::mat3* models, Shoal *, cudaArrays);
 
 //#define CPU 

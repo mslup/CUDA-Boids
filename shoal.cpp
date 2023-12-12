@@ -1,15 +1,15 @@
 #include "framework.h"
 
-glm::mat3 cpu_shoal::calculate_rotate(glm::vec2 pos, glm::vec2 vel)
+glm::mat3 Shoal::calculate_rotate(glm::vec2 pos, glm::vec2 vel)
 {
 	glm::vec2 v = glm::normalize(vel);
 	glm::vec2 vT = glm::vec2(v.y, -v.x);
 	return glm::mat3(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(pos, 1.0f));
 }
 
-void cpu_shoal::update_boids(double d)
+void Shoal::update_boids_cpu(double d)
 {
-	for (int i = 0; i < N; ++i)
+	for (int i = 0; i < Application::N; ++i)
 	{
 		apply_boid_rules(i);
 		turn_from_wall(i);
@@ -20,24 +20,26 @@ void cpu_shoal::update_boids(double d)
 		models[i] = calculate_rotate(positions_bb[i], velocities_bb[i]);
 	}
 
-	std::memcpy(velocities, velocities_bb, N * sizeof(glm::vec2));
-	std::memcpy(positions, positions_bb, N * sizeof(glm::vec2));
+	std::memcpy(velocities, velocities_bb, Application::N * sizeof(glm::vec2));
+	std::memcpy(positions, positions_bb, Application::N * sizeof(glm::vec2));
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(models), &(models)[0], GL_DYNAMIC_DRAW);
 }
 
-void cpu_shoal::calculate_all_models()
+void Shoal::calculate_all_models()
 {
-	for (int i = 0; i < N; i++)
+	for (int i = 0; i < Application::N; i++)
 		models[i] = calculate_rotate(positions[i], velocities[i]);
 }
 
-void cpu_shoal::apply_boid_rules(int i)
+void Shoal::apply_boid_rules(int i)
 {
 	glm::vec2 separation_component(0, 0);
 	glm::vec2 velocity_sum(0, 0);
 	glm::vec2 position_sum(0, 0);
 	int neighbors = 0;
 
-	for (int j = 0; j < N; ++j)
+	for (int j = 0; j < Application::N; ++j)
 	{
 		float len = glm::length(positions[i] - positions[j]);
 		if (i != j && len < params.visibility_radius)
@@ -66,7 +68,7 @@ void cpu_shoal::apply_boid_rules(int i)
 		+ params.c * cohesion_component;
 }
 
-void cpu_shoal::turn_from_wall(int i)
+void Shoal::turn_from_wall(int i)
 {
 	float dx_right = 1 - positions_bb[i].x;
 	float dx_left = positions_bb[i].x + 1;
@@ -85,7 +87,7 @@ void cpu_shoal::turn_from_wall(int i)
 		velocities_bb[i].y += params.turn * len / (dy_down * dy_down);
 }
 
-void cpu_shoal::speed_limit(int i)
+void Shoal::speed_limit(int i)
 {
 	if (glm::length(velocities_bb[i]) < params.min_speed)
 		velocities_bb[i] = params.min_speed * glm::normalize(velocities_bb[i]);
@@ -93,7 +95,7 @@ void cpu_shoal::speed_limit(int i)
 		velocities_bb[i] = params.max_speed * glm::normalize(velocities_bb[i]);
 }
 
-void cpu_shoal::teleport_through_wall(int i)
+void Shoal::teleport_through_wall(int i)
 {
 	if (positions_bb[i].x > 1)
 		positions_bb[i].x = -1;
@@ -103,4 +105,29 @@ void cpu_shoal::teleport_through_wall(int i)
 		positions_bb[i].x = 1;
 	if (positions_bb[i].y < -1)
 		positions_bb[i].y = 1;
+}
+
+void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResource* cudaVBO)
+{
+	size_t mat_size = Application::N * sizeof(glm::mat3);
+	size_t vec_size = Application::N * sizeof(glm::vec2);
+	size_t int_size = Application::N * sizeof(int);
+	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
+	size_t grid_size = density * density * sizeof(int);
+
+	cudaMemset(soa.grid_boids, 0, int_size);
+	cudaMemset(soa.grid_cells, 0, int_size);
+	cudaMemset(soa.grid_starts, -1, grid_size);
+	cudaMemset(soa.grid_ends, -1, grid_size);
+
+	const int max_threads = 1024;
+	int blocks_per_grid = (Application::N + max_threads - 1) / max_threads;
+
+	glm::mat3* models;
+	cudaGraphicsMapResources(1, &cudaVBO, 0);
+	cudaGraphicsResourceGetMappedPointer((void**)&models, NULL, cudaVBO);
+
+	callKernels(blocks_per_grid, max_threads, d, models, this, soa);
+
+	cudaGraphicsUnmapResources(1, &cudaVBO, 0);
 }

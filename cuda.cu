@@ -37,7 +37,7 @@ __device__ void iterate_through_cell(const cudaArrays& soa, int cell, int i, boi
 	int* boids = soa.grid_boids;
 
 	// todo: merge R with visib_radius
-	float radius_sq = R * R;
+	float radius_sq = MIN_R * MIN_R;
 
 	int start = grid_starts[cell];
 
@@ -56,7 +56,7 @@ __device__ void iterate_through_cell(const cudaArrays& soa, int cell, int i, boi
 		float len = glm::length(diff);
 		glm::vec2 norm = glm::normalize(diff);
 
-		if (len < R)//)lensq < radius_sq)
+		if (len < MIN_R)//)lensq < radius_sq)
 		{
       //soa.velocities_bb[boids[k]] = glm::vec2(1, 0);
 			(*boidParams.separation_component) += norm / len;
@@ -67,7 +67,7 @@ __device__ void iterate_through_cell(const cudaArrays& soa, int cell, int i, boi
 	}
 }
 
-__device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStruct& params, int i, double d)
+__device__ glm::vec2 apply_boid_rules(cudaArrays soa, const Shoal::paramsStruct& params, int i, double d)
 {
 	glm::vec2* pos = soa.positions;
 	glm::vec2* pos_bb = soa.positions_bb;
@@ -80,7 +80,7 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 	glm::vec2 velocity_sum(0, 0);
 	glm::vec2 position_sum(0, 0);
 	int neighbors = 0;
-	float radius_sq = R * R;
+	float radius_sq = MIN_R * MIN_R;
 
 	boidParamsStruct boidParams;
 
@@ -158,7 +158,7 @@ __device__ glm::vec2 apply_boid_rules(cudaArrays soa, const cpu_shoal::paramsStr
 			+ params.c * cohesion_component);
 }
 
-__device__ glm::vec2 speed_limit(glm::vec2 vel, const cpu_shoal::paramsStruct& params)
+__device__ glm::vec2 speed_limit(glm::vec2 vel, const Shoal::paramsStruct& params)
 {
 	if (glm::length(vel) < params.min_speed)
 		return params.min_speed * glm::normalize(vel);
@@ -168,7 +168,7 @@ __device__ glm::vec2 speed_limit(glm::vec2 vel, const cpu_shoal::paramsStruct& p
 	return vel;
 }
 
-__device__ glm::vec2 turn_from_wall(glm::vec2 pos, glm::vec2 vel, const cpu_shoal::paramsStruct& params)
+__device__ glm::vec2 turn_from_wall(glm::vec2 pos, glm::vec2 vel, const Shoal::paramsStruct& params)
 {
 	float dx_right = 1 - pos.x;
 	float dx_left = pos.x + 1;
@@ -211,7 +211,7 @@ __global__ void calculateGridKernel(cudaArrays soa)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 
-	if (i >= N)
+	if (i >= Application::N)
 		return;
 
 	soa.grid_cells[i] = calculate_grid_index(soa.positions[i]);
@@ -224,7 +224,7 @@ __global__ void calculateGridStartsKernel(struct cudaArrays soa)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 
-	if (i >= N)
+	if (i >= Application::N)
 		return;
 
 	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
@@ -241,11 +241,11 @@ __global__ void calculateGridStartsKernel(struct cudaArrays soa)
 	}
 }
 
-__global__ void calculateBoidsKernel(cudaArrays soa, cpu_shoal::paramsStruct params, double d, glm::mat3 *models)
+__global__ void calculateBoidsKernel(cudaArrays soa, Shoal::paramsStruct params, double d, glm::mat3 *models)
 {
 	int i = threadIdx.x + blockIdx.x * blockDim.x;
 
-	if (i >= N)
+	if (i >= Application::N)
 		return;
 
 #ifdef SNAP_TO_GRID

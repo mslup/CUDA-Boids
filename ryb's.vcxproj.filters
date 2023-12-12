@@ -15,17 +15,11 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cpu_shoal.cpp">
-      <Filter>Source code</Filter>
-    </ClCompile>
     <ClCompile Include="glad.c">
       <Filter>Header files</Filter>
     </ClCompile>
     <ClCompile Include="framework.h">
       <Filter>Header files</Filter>
-    </ClCompile>
-    <ClCompile Include="cpu_shoal_init.cpp">
-      <Filter>Source code</Filter>
     </ClCompile>
     <ClCompile Include="display.cu">
       <Filter>Source code</Filter>
@@ -54,12 +48,27 @@
     <ClCompile Include="ImGUI\imgui.cpp">
       <Filter>ImGUI</Filter>
     </ClCompile>
+    <ClCompile Include="application.cpp">
+      <Filter>Source code</Filter>
+    </ClCompile>
+    <ClCompile Include="shoal.cpp">
+      <Filter>Source code</Filter>
+    </ClCompile>
+    <ClCompile Include="shoal_init.cpp">
+      <Filter>Source code</Filter>
+    </ClCompile>
+    <ClCompile Include="window.cpp">
+      <Filter>Source code</Filter>
+    </ClCompile>
+    <ClCompile Include="vao.cpp">
+      <Filter>Source code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="main.cu">
+    <CudaCompile Include="cuda.cu">
       <Filter>Source code</Filter>
     </CudaCompile>
-    <CudaCompile Include="cuda.cu">
+    <CudaCompile Include="main.cpp">
       <Filter>Source code</Filter>
     </CudaCompile>
   </ItemGroup>
@@ -76,12 +85,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="shader.h">
-      <Filter>Header files</Filter>
-    </ClInclude>
-    <ClInclude Include="cpu_shoal.hpp">
-      <Filter>Header files</Filter>
-    </ClInclude>
-    <ClInclude Include="display.hpp">
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="cuda.cuh">
@@ -117,6 +120,14 @@
     <ClInclude Include="ImGUI\imconfig.h">
       <Filter>ImGUI</Filter>
     </ClInclude>
+    <ClInclude Include="application.hpp">
+      <Filter>Source code</Filter>
+    </ClInclude>
+    <ClInclude Include="shoal.hpp">
+      <Filter>Source code</Filter>
+    </ClInclude>
+    <ClInclude Include="window.hpp" />
+    <ClInclude Include="vao.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="todo.txt" />

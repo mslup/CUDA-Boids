@@ -80,11 +80,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="cuda.cu" />
-    <CudaCompile Include="main.cu" />
+    <CudaCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cpu_shoal.cpp" />
-    <ClCompile Include="cpu_shoal_init.cpp" />
+    <ClCompile Include="application.cpp" />
+    <ClCompile Include="shoal.cpp" />
+    <ClCompile Include="shoal_init.cpp" />
     <ClCompile Include="display.cu" />
     <ClCompile Include="framework.h" />
     <ClCompile Include="glad.c" />
@@ -96,6 +97,8 @@
     <ClCompile Include="ImGUI\imgui_stdlib.cpp" />
     <ClCompile Include="ImGUI\imgui_tables.cpp" />
     <ClCompile Include="ImGUI\imgui_widgets.cpp" />
+    <ClCompile Include="vao.cpp" />
+    <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="fragment.glsl" />
@@ -103,9 +106,9 @@
     <None Include="vertex.glsl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cpu_shoal.hpp" />
+    <ClInclude Include="application.hpp" />
+    <ClInclude Include="shoal.hpp" />
     <ClInclude Include="cuda.cuh" />
-    <ClInclude Include="display.hpp" />
     <ClInclude Include="ImGUI\imconfig.h" />
     <ClInclude Include="ImGUI\imgui.h" />
     <ClInclude Include="ImGUI\imgui_impl_glfw.h" />
@@ -117,6 +120,8 @@
     <ClInclude Include="ImGUI\imstb_textedit.h" />
     <ClInclude Include="ImGUI\imstb_truetype.h" />
     <ClInclude Include="shader.h" />
+    <ClInclude Include="vao.hpp" />
+    <ClInclude Include="window.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="todo.txt" />
