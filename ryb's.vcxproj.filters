@@ -117,9 +117,6 @@
     <ClInclude Include="ImGUI\imconfig.h">
       <Filter>ImGUI</Filter>
     </ClInclude>
-    <ClInclude Include="shoal.hpp">
-      <Filter>Source code</Filter>
-    </ClInclude>
     <ClInclude Include="application.hpp">
       <Filter>Header files</Filter>
     </ClInclude>
@@ -130,6 +127,9 @@
       <Filter>Header files</Filter>
     </ClInclude>
     <ClInclude Include="camera.hpp">
+      <Filter>Header files</Filter>
+    </ClInclude>
+    <ClInclude Include="shoal.hpp">
       <Filter>Header files</Filter>
     </ClInclude>
   </ItemGroup>

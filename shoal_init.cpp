@@ -50,9 +50,9 @@ void Shoal::init_positions()
 {
 	for (int i = 0; i < Application::N; i++)
 	{
-		positions[i].x = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
-		positions[i].y = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
-		positions[i].z = 2 * ((float)(rand()) / (float)(RAND_MAX)-0.5);
+		positions[i].x = 2 * ((float)(rand()) / (float)(RAND_MAX)) + (-1);
+		positions[i].y = 2 * ((float)(rand()) / (float)(RAND_MAX)) + (-1);
+		positions[i].z = 2 * ((float)(rand()) / (float)(RAND_MAX)) - 1;
 	}
 
 	std::memcpy(positions_bb, positions, Application::N * sizeof(glm::vec3));
@@ -62,9 +62,9 @@ void Shoal::init_velocities()
 {
 	for (int i = 0; i < Application::N; i++)
 	{
-		velocities[i].x = ((float)(rand()) / (float)(RAND_MAX)-0.5);
-		velocities[i].y = ((float)(rand()) / (float)(RAND_MAX)-0.5);
-		velocities[i].z = ((float)(rand()) / (float)(RAND_MAX)-0.5);
+		velocities[i].x = 0;//((float)(rand()) / (float)(RAND_MAX)-0.5);
+		velocities[i].y = 0;//((float)(rand()) / (float)(RAND_MAX)-0.5);
+		velocities[i].z = 1;//((float)(rand()) / (float)(RAND_MAX)-0.5);
 	}
 
 	std::memcpy(velocities_bb, velocities, Application::N * sizeof(glm::vec3));

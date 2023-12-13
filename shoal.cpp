@@ -108,7 +108,8 @@ void Shoal::teleport_through_wall(int i)
 		positions_bb[i].y = 1;
 }
 
-void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResource* cudaVBO)
+void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResource* cudaVBO,
+	float x, float y, float z)
 {
 	size_t mat_size = Application::N * sizeof(glm::mat4);
 	size_t vec_size = Application::N * sizeof(glm::vec3);
@@ -128,9 +129,7 @@ void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResour
 	cudaGraphicsMapResources(1, &cudaVBO, 0);
 	cudaGraphicsResourceGetMappedPointer((void**)&models, NULL, cudaVBO);
 
-	callKernels(blocks_per_grid, max_threads, d, models, this, soa);
-
-	std::cerr << "o co kurwa chodzi " << std::endl;
+	callKernels(blocks_per_grid, max_threads, d, models, this, soa, x, y, z);
 
 	cudaGraphicsUnmapResources(1, &cudaVBO, 0);
 }

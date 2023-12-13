@@ -87,10 +87,12 @@ public:
             Position -= Right * velocity;
         if (key == GLFW_KEY_D)
             Position += Right * velocity;
-        if (key == GLFW_KEY_SPACE || key == GLFW_KEY_Q)
+        if (key == GLFW_KEY_SPACE)
             Position += Up * velocity;
-        if (key == GLFW_KEY_LEFT_SHIFT || key == GLFW_KEY_E)
+        if (key == GLFW_KEY_LEFT_SHIFT)
             Position -= Up * velocity;
+
+        updateCameraVectors();
     }
 
     // processes input received from a mouse input system. Expects the offset value in both the x and y direction.

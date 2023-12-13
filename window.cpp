@@ -91,20 +91,28 @@ void Window::processInput()
 
 	//float cameraSpeed = static_cast<float>(2.5 * deltaTime);
 
-	int cameraPosKeys[8] = {
+	int cameraPosKeys[6] = {
 		GLFW_KEY_W,
 		GLFW_KEY_S,
 		GLFW_KEY_A,
 		GLFW_KEY_D,
 		GLFW_KEY_SPACE,
 		GLFW_KEY_LEFT_SHIFT,
-		GLFW_KEY_Q,
-		GLFW_KEY_E
 	};
 
-	for (int i = 0; i < 8; i++)
+	for (int i = 0; i < 6; i++)
 	{
 		if (glfwGetKey(wndptr, cameraPosKeys[i]) == GLFW_PRESS)
 			app->updateCameraPos(cameraPosKeys[i]);
 	}
+
+	//todo: do
+	if (glfwGetKey(wndptr, GLFW_KEY_Q) == GLFW_PRESS)
+		app->updateCameraAngles(-5, 0);
+	if (glfwGetKey(wndptr, GLFW_KEY_E) == GLFW_PRESS)
+		app->updateCameraAngles(5, 0);
+	if (glfwGetKey(wndptr, GLFW_KEY_1) == GLFW_PRESS)
+		app->updateCameraAngles(0, 5);
+	if (glfwGetKey(wndptr, GLFW_KEY_3) == GLFW_PRESS)
+		app->updateCameraAngles(0, -5);
 }

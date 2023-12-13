@@ -14,7 +14,7 @@ public:
 
 	void run();
 	
-	constexpr static int N = 20;
+	constexpr static int N = 1030;
 	
 	void updateCameraAngles(float xoffset, float yoffset);
 	void updateCameraZoom(float yoffset);
@@ -24,8 +24,10 @@ private:
 	Shoal* shoal;
 	Window* window;
 	VAO* vao;
-	Shader *shader;
+	Shader* shader;
 	Camera* camera;
+
+	float x, y, z;
 
 	bool pause = false;
 	double deltaTime;

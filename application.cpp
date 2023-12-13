@@ -2,6 +2,8 @@
 
 Application::Application()
 {
+	x = y = z = 0;
+
 	shoal = new Shoal();
 	vao = new VAO();
 	camera = new Camera();
@@ -115,7 +117,7 @@ void Application::run()
 		if (!pause)
 		{
 			update();
-			pause = true;
+			//pause = true;
 		}
 
 		shader->setMat4("projection", camera->GetProjectionMatrix(window->width, window->height));
@@ -150,6 +152,9 @@ void Application::imGuiFrame()
 	ImGui::SliderFloat("min_speed", &shoal->params.min_speed, 0.0f, shoal->params.max_speed);
 	ImGui::SliderFloat("visbility_radius", &shoal->params.visibility_radius, 0.0f, 0.5f);
 
+	ImGui::SliderFloat("x", &x, -1, 1);
+	ImGui::SliderFloat("y", &y, -1, 1);
+	ImGui::SliderFloat("z", &z, -1, 1);
 }
 
 void Application::update()
@@ -157,7 +162,7 @@ void Application::update()
 #ifdef CPU
 	shoal->update_boids_cpu(deltaTime);
 #else
-	shoal->update_boids_gpu(soa, deltaTime, vao->cudaVBO);
+	shoal->update_boids_gpu(soa, deltaTime, vao->cudaVBO, x, y, z);
 #endif
 }
 

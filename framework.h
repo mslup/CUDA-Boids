@@ -25,7 +25,7 @@
 
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 800;
-constexpr float MIN_R = 0.2f;
+constexpr float MIN_R = 0.3f;
 constexpr float GRID_R = 2 * MIN_R;
 constexpr float LEFT_WALL = -1;
 constexpr float DOWN_WALL = -1;
@@ -53,6 +53,8 @@ struct cudaArrays {
 #include "camera.hpp"
 #include "cuda.cuh"
 
-void callKernels(int blocks_per_grid, int max_threads, double deltaTime, glm::mat4* models, Shoal *, cudaArrays);
+void callKernels(int blocks_per_grid, int max_threads,
+	double deltaTime, glm::mat4* models, Shoal*, cudaArrays
+	, float x, float y, float z);
 
 //#define CPU 

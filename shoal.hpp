@@ -30,7 +30,8 @@ public:
 	glm::mat4 calculate_rotate(glm::vec3 pos, glm::vec3 vel);
 
 	void update_boids_cpu(double d);
-	void update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResource* cudaVBO);
+	void update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResource* cudaVBO
+		, float, float, float);
 	void calculate_all_models();
 
 	//const int N = 5000;
