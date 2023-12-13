@@ -1,5 +1,6 @@
 #include "framework.h"
 
+
 Application::Application()
 {
 	x = y = z = 0;
@@ -28,8 +29,10 @@ Application::Application()
 		boidColor.g / 255.0f,
 		boidColor.b / 255.0f);
 
-	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
-	size_t grid_size = density * density * density * sizeof(int);
+	size_t max_density = (int)glm::ceil(WORLD_WIDTH / MIN_GRID_R);
+	size_t max_grid_size = max_density * max_density * max_density * sizeof(int);
+
+	std::cout << max_grid_size << std::endl;
 
 	cudaMalloc(&soa.models, mat_size);
 	cudaMalloc(&soa.positions, vec_size);
@@ -38,8 +41,8 @@ Application::Application()
 	cudaMalloc(&soa.velocities_bb, vec_size);
 	cudaMalloc(&soa.grid_cells, int_size);
 	cudaMalloc(&soa.grid_boids, int_size);
-	cudaMalloc(&soa.grid_starts, grid_size);
-	cudaMalloc(&soa.grid_ends, grid_size);
+	cudaMalloc(&soa.grid_starts, max_grid_size);
+	cudaMalloc(&soa.grid_ends, max_grid_size);
 
 	cudaMemcpy(soa.positions, shoal->positions, vec_size, cudaMemcpyHostToDevice);
 	cudaMemcpy(soa.velocities, shoal->velocities, vec_size, cudaMemcpyHostToDevice);
@@ -150,11 +153,8 @@ void Application::imGuiFrame()
 	ImGui::SliderFloat("alignment", &shoal->params.a, 0.0f, 0.5f);
 	ImGui::SliderFloat("max_speed", &shoal->params.max_speed, shoal->params.min_speed, 1.0f);
 	ImGui::SliderFloat("min_speed", &shoal->params.min_speed, 0.0f, shoal->params.max_speed);
-	ImGui::SliderFloat("visbility_radius", &shoal->params.visibility_radius, 0.0f, 0.5f);
+	ImGui::SliderFloat("visbility_radius", &shoal->params.visibility_radius, MIN_R, 0.5f);
 
-	ImGui::SliderFloat("x", &x, -1, 1);
-	ImGui::SliderFloat("y", &y, -1, 1);
-	ImGui::SliderFloat("z", &z, -1, 1);
 }
 
 void Application::update()

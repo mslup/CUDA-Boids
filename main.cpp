@@ -12,7 +12,7 @@ void checkCudaError() {
 void callKernels(int blocks_per_grid, int max_threads, double deltaTime,
 	glm::mat4* models, Shoal* shoal, struct cudaArrays soa, float x, float y, float z)
 {
-	calculateGridKernel << <blocks_per_grid, max_threads >> > (soa);
+	calculateGridKernel << <blocks_per_grid, max_threads >> > (soa, shoal->params.visibility_radius);
 	checkCudaError();
 	thrust::sort_by_key(thrust::device, soa.grid_cells, soa.grid_cells + Application::N, soa.grid_boids);
 	calculateGridStartsKernel << <blocks_per_grid, max_threads >> > (soa);

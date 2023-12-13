@@ -2,8 +2,8 @@
 
 Shoal::Shoal()
 {
-	params.height = 0.04f;
-	params.width = 0.02f;
+	params.height = 0.04f ;
+	params.width = 0.02f  ;
 
 	float sqrt3 = glm::sqrt(3);
 	float a = params.width;
@@ -25,9 +25,9 @@ Shoal::Shoal()
 	std::copy(vertices.begin(), vertices.end(), params.vertices);
 	std::copy(indices.begin(), indices.end(), params.indices);
 
-	params.s = 0.001;
+	params.s = 1e-5;
 	params.a = 0.1;
-	params.c = 0.005;
+	params.c = 1e-3;
 
 	params.margin = 0.2f;
 	params.turn = 5e-4;
@@ -35,7 +35,7 @@ Shoal::Shoal()
 	params.max_speed = 0.9;
 	params.min_speed = 0.1;
 
-	params.visibility_radius = 1e-1;
+	params.visibility_radius = 0.1;//4.5f / 45;
 
 	init_positions();
 	init_velocities();

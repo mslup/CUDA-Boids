@@ -114,13 +114,13 @@ void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResour
 	size_t mat_size = Application::N * sizeof(glm::mat4);
 	size_t vec_size = Application::N * sizeof(glm::vec3);
 	size_t int_size = Application::N * sizeof(int);
-	size_t density = (int)glm::ceil(WORLD_WIDTH / GRID_R);
-	size_t grid_size = density * density * density * sizeof(int);
+	size_t max_density = (int)glm::ceil(WORLD_WIDTH / MIN_GRID_R);
+	size_t max_grid_size = max_density * max_density * max_density * sizeof(int);
 
 	cudaMemset(soa.grid_boids, 0, int_size);
 	cudaMemset(soa.grid_cells, 0, int_size);
-	cudaMemset(soa.grid_starts, -1, grid_size);
-	cudaMemset(soa.grid_ends, -1, grid_size);
+	cudaMemset(soa.grid_starts, -1, max_grid_size);
+	cudaMemset(soa.grid_ends, -1, max_grid_size);
 
 	const int max_threads = 1024;
 	int blocks_per_grid = (Application::N + max_threads - 1) / max_threads;
