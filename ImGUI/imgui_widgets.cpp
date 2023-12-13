@@ -5457,16 +5457,16 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
     ImVec2 triangle_pc = ImVec2(triangle_r * -0.5f, triangle_r * +0.866025f); // White point.
 
     float H = col[0], S = col[1], V = col[2];
-    float R = col[0], G = col[1], B = col[2];
+    float MIN_R = col[0], G = col[1], B = col[2];
     if (flags & ImGuiColorEditFlags_InputRGB)
     {
         // Hue is lost when converting from grayscale rgb (saturation=0). Restore it.
-        ColorConvertRGBtoHSV(R, G, B, H, S, V);
+        ColorConvertRGBtoHSV(MIN_R, G, B, H, S, V);
         ColorEditRestoreHS(col, &H, &S, &V);
     }
     else if (flags & ImGuiColorEditFlags_InputHSV)
     {
-        ColorConvertHSVtoRGB(H, S, V, R, G, B);
+        ColorConvertHSVtoRGB(H, S, V, MIN_R, G, B);
     }
 
     bool value_changed = false, value_changed_h = false, value_changed_sv = false;
@@ -5643,10 +5643,10 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
     {
         if (flags & ImGuiColorEditFlags_InputRGB)
         {
-            R = col[0];
+            MIN_R = col[0];
             G = col[1];
             B = col[2];
-            ColorConvertRGBtoHSV(R, G, B, H, S, V);
+            ColorConvertRGBtoHSV(MIN_R, G, B, H, S, V);
             ColorEditRestoreHS(col, &H, &S, &V);   // Fix local Hue as display below will use it immediately.
         }
         else if (flags & ImGuiColorEditFlags_InputHSV)
@@ -5654,7 +5654,7 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
             H = col[0];
             S = col[1];
             V = col[2];
-            ColorConvertHSVtoRGB(H, S, V, R, G, B);
+            ColorConvertHSVtoRGB(H, S, V, MIN_R, G, B);
         }
     }
 
@@ -5666,7 +5666,7 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
 
     ImVec4 hue_color_f(1, 1, 1, style.Alpha); ColorConvertHSVtoRGB(H, 1, 1, hue_color_f.x, hue_color_f.y, hue_color_f.z);
     ImU32 hue_color32 = ColorConvertFloat4ToU32(hue_color_f);
-    ImU32 user_col32_striped_of_alpha = ColorConvertFloat4ToU32(ImVec4(R, G, B, style.Alpha)); // Important: this is still including the main rendering/style alpha!!
+    ImU32 user_col32_striped_of_alpha = ColorConvertFloat4ToU32(ImVec4(MIN_R, G, B, style.Alpha)); // Important: this is still including the main rendering/style alpha!!
 
     ImVec2 sv_cursor_pos;
 

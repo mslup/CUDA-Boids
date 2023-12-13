@@ -80,49 +80,114 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="cuda.cu" />
-    <CudaCompile Include="main.cu" />
+    <CudaCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cpu_shoal.cpp" />
-    <ClCompile Include="cpu_shoal_init.cpp" />
-    <ClCompile Include="display.cu" />
+    <ClCompile Include="application.cpp" />
+    <ClCompile Include="shoal.cpp" />
+    <ClCompile Include="shoal_init.cpp" />
     <ClCompile Include="framework.h" />
     <ClCompile Include="glad.c" />
-    <ClCompile Include="ImGUI\imgui.cpp" />
-    <ClCompile Include="ImGUI\imgui_demo.cpp" />
-    <ClCompile Include="ImGUI\imgui_draw.cpp" />
-    <ClCompile Include="ImGUI\imgui_impl_glfw.cpp" />
-    <ClCompile Include="ImGUI\imgui_impl_opengl3.cpp" />
-    <ClCompile Include="ImGUI\imgui_stdlib.cpp" />
-    <ClCompile Include="ImGUI\imgui_tables.cpp" />
-    <ClCompile Include="ImGUI\imgui_widgets.cpp" />
+    <ClCompile Include="ImGUI\imgui.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui_demo.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui_draw.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui_impl_glfw.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui_impl_opengl3.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui_stdlib.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui_tables.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="ImGUI\imgui_widgets.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="vao.cpp" />
+    <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="fragment.glsl" />
-    <None Include="ImGUI\imgui.natstepfilter" />
+    <None Include="ImGUI\imgui.natstepfilter">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </None>
     <None Include="vertex.glsl" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cpu_shoal.hpp" />
+    <ClInclude Include="application.hpp" />
+    <ClInclude Include="camera.hpp" />
+    <ClInclude Include="shoal.hpp" />
     <ClInclude Include="cuda.cuh" />
-    <ClInclude Include="display.hpp" />
-    <ClInclude Include="ImGUI\imconfig.h" />
-    <ClInclude Include="ImGUI\imgui.h" />
-    <ClInclude Include="ImGUI\imgui_impl_glfw.h" />
-    <ClInclude Include="ImGUI\imgui_impl_opengl3.h" />
-    <ClInclude Include="ImGUI\imgui_impl_opengl3_loader.h" />
-    <ClInclude Include="ImGUI\imgui_internal.h" />
-    <ClInclude Include="ImGUI\imgui_stdlib.h" />
-    <ClInclude Include="ImGUI\imstb_rectpack.h" />
-    <ClInclude Include="ImGUI\imstb_textedit.h" />
-    <ClInclude Include="ImGUI\imstb_truetype.h" />
-    <ClInclude Include="shader.h" />
+    <ClInclude Include="ImGUI\imconfig.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imgui.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imgui_impl_glfw.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imgui_impl_opengl3.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imgui_impl_opengl3_loader.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imgui_internal.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imgui_stdlib.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imstb_rectpack.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imstb_textedit.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="ImGUI\imstb_truetype.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="shader.hpp" />
+    <ClInclude Include="vao.hpp" />
+    <ClInclude Include="window.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="todo.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="ImGUI\imgui.natvis" />
+    <Natvis Include="ImGUI\imgui.natvis">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </Natvis>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

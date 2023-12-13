@@ -1,7 +1,9 @@
 - check for errors
-- refactor 
 - sciezki wykonania takie smae dla watkow
 - if odleglosc = 0 separation edge case
+- uniform vertices?
+- grid 3d
+- fix camera
 
 check:
 - cuda opengl interop
@@ -11,6 +13,8 @@ check:
 - grid
 - deltatime w pozycji czy w welocycji?
 - malloc before loop
+- refactor 
+- camera has projection matrix
 
 wontfix:
 - shared memory??

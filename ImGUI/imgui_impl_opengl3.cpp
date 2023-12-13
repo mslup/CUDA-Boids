@@ -429,7 +429,7 @@ static void ImGui_ImplOpenGL3_SetupRenderState(ImDrawData* draw_data, int fb_wid
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayPos is (0,0) for single viewport apps.
     GL_CALL(glViewport(0, 0, (GLsizei)fb_width, (GLsizei)fb_height));
     float L = draw_data->DisplayPos.x;
-    float R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
+    float MIN_R = draw_data->DisplayPos.x + draw_data->DisplaySize.x;
     float T = draw_data->DisplayPos.y;
     float B = draw_data->DisplayPos.y + draw_data->DisplaySize.y;
 #if defined(GL_CLIP_ORIGIN)
@@ -437,10 +437,10 @@ static void ImGui_ImplOpenGL3_SetupRenderState(ImDrawData* draw_data, int fb_wid
 #endif
     const float ortho_projection[4][4] =
     {
-        { 2.0f/(R-L),   0.0f,         0.0f,   0.0f },
+        { 2.0f/(MIN_R-L),   0.0f,         0.0f,   0.0f },
         { 0.0f,         2.0f/(T-B),   0.0f,   0.0f },
         { 0.0f,         0.0f,        -1.0f,   0.0f },
-        { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
+        { (MIN_R+L)/(L-MIN_R),  (T+B)/(B-T),  0.0f,   1.0f },
     };
     glUseProgram(bd->ShaderHandle);
     glUniform1i(bd->AttribLocationTex, 0);
