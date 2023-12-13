@@ -34,6 +34,7 @@ struct boidParamsStruct {
 __device__ void iterate_through_cell(const cudaArrays& soa, int cell, int i, boidParamsStruct boidParams)
 {
 	glm::vec3* pos = soa.positions;
+	glm::vec3* vel = soa.velocities;
 	int* grid_starts = soa.grid_starts;
 	int* grid_ends = soa.grid_ends;
 	int* boids = soa.grid_boids;
@@ -57,14 +58,14 @@ __device__ void iterate_through_cell(const cudaArrays& soa, int cell, int i, boi
 		float len = glm::length(diff);
 		glm::vec3 norm = glm::normalize(diff);
 
-		//if (len < MIN_R)
+		if (len < MIN_R)
 		{
-			soa.velocities_bb[j] = glm::vec3(0, 1, 0);
+			//soa.velocities_bb[j] = glm::vec3(0, 1, 0);
 
-			//(*boidParams.separation_component) += norm / len;
-			//(*boidParams.velocity_sum) += vel[j];
-			//(*boidParams.position_sum) += pos[j];
-			//(*boidParams.neighbors)++;
+			(*boidParams.separation_component) += norm / len;
+			(*boidParams.velocity_sum) += vel[j];
+			(*boidParams.position_sum) += pos[j];
+			(*boidParams.neighbors)++;
 		}
 	}
 }
@@ -87,15 +88,15 @@ __device__ glm::vec3 apply_boid_rules(cudaArrays soa, const Shoal::paramsStruct&
 #ifdef NAIVE
 	for (int j = 0; j < Application::N; ++j)
 	{
-		glm::vec3 diff = pos[i] - pos[j];
+		glm::vec3 diff = soa.positions[i] - soa.positions[j];
 		float len = glm::length(diff);
 		glm::vec3 norm = glm::normalize(diff);
 
 		if (i != j && len < MIN_R)
 		{
 			separation_component += norm / len;
-			velocity_sum += vel[j];
-			position_sum += pos[j];
+			velocity_sum += soa.velocities[j];
+			position_sum += soa.positions[j];
 
 			neighbors++;
 		}
@@ -110,21 +111,16 @@ __device__ glm::vec3 apply_boid_rules(cudaArrays soa, const Shoal::paramsStruct&
 	int densitysq = density * density;
 	int grid_size = density * densitysq;
 
-	/*printf("%d %d %d; density = %d; cell = %d; pos = %f %f %f\n",
-		gridX, gridY, gridZ, density, cell, pos[i].x, pos[i].y, pos[i].z);*/
-
 	// todo: calculate this beforehand? sort a duplicate buffer?
 
-	int start_offset, x_offset, y_offset, z_offset;
+	int x_offset, y_offset, z_offset;
 
 	if (soa.positions[i].x >= LEFT_WALL + (gridX + 0.5) * GRID_R)
 	{
-		start_offset = 0;
 		x_offset = 1;
 	}
 	else
 	{
-		start_offset = -1;
 		x_offset = -1;
 	}
 
@@ -142,47 +138,29 @@ __device__ glm::vec3 apply_boid_rules(cudaArrays soa, const Shoal::paramsStruct&
 	{
 		int new_cell;
 
-		iterate_through_cell(soa, cell, i, boidParams);
-		
-		new_cell = cell + x_offset;
-		if (new_cell >= 0 && new_cell < grid_size 
-			&& new_cell / density == (new_cell - x_offset) / density) // stay in the same x-row
-			iterate_through_cell(soa, new_cell, i, boidParams);
+		for (int k = 0; k < 2; k++) // in two grid planes
+		{
+			new_cell = cell + k * z_offset;
+			if (new_cell >= 0 && new_cell < grid_size)
+				iterate_through_cell(soa, new_cell, i, boidParams);
 
-		new_cell = cell + y_offset;
-		if (new_cell >= 0 && new_cell < grid_size 
-			&& new_cell / densitysq == (new_cell - y_offset) / densitysq) // stay in the same y-row (column)
-			iterate_through_cell(soa, new_cell, i, boidParams);
+			new_cell = cell + x_offset + k * z_offset;
+			if (new_cell >= 0 && new_cell < grid_size
+				&& new_cell / density == (new_cell - x_offset) / density) // stay in the same x-row
+				iterate_through_cell(soa, new_cell, i, boidParams);
 
-		new_cell = cell + x_offset + y_offset;
-		if (new_cell >= 0 && new_cell < grid_size
-			&& new_cell / density == (new_cell - x_offset) / density // stay in the same x-row
-			&& new_cell / densitysq == (new_cell - y_offset) / densitysq) // stay in the same y-row (column)
-			iterate_through_cell(soa, new_cell, i, boidParams);
+			new_cell = cell + y_offset + k * z_offset;
+			if (new_cell >= 0 && new_cell < grid_size
+				&& new_cell / densitysq == (new_cell - y_offset) / densitysq) // stay in the same y-row (column)
+				iterate_through_cell(soa, new_cell, i, boidParams);
 
+			new_cell = cell + x_offset + y_offset + k * z_offset;
+			if (new_cell >= 0 && new_cell < grid_size
+				&& new_cell / density == (new_cell - x_offset) / density // stay in the same x-row
+				&& new_cell / densitysq == (new_cell - y_offset) / densitysq) // stay in the same y-row (column)
+				iterate_through_cell(soa, new_cell, i, boidParams);
+		}
 
-		new_cell = cell + z_offset;
-		if (new_cell >= 0 && new_cell < grid_size)
-			iterate_through_cell(soa, new_cell, i, boidParams);
-
-		new_cell = cell + x_offset + z_offset;
-		if (new_cell >= 0 && new_cell < grid_size
-			&& new_cell / density == (new_cell - x_offset) / density) // stay in the same x-row
-			iterate_through_cell(soa, new_cell, i, boidParams);
-
-		new_cell = cell + y_offset + z_offset;
-		if (new_cell >= 0 && new_cell < grid_size
-			&& new_cell / densitysq == (new_cell - y_offset) / densitysq) // stay in the same y-row (column)
-			iterate_through_cell(soa, new_cell, i, boidParams);
-
-		new_cell = cell + x_offset + y_offset + z_offset;
-		if (new_cell >= 0 && new_cell < grid_size
-			&& new_cell / density == (new_cell - x_offset) / density // stay in the same x-row
-			&& new_cell / densitysq == (new_cell - y_offset) / densitysq) // stay in the same y-row (column)
-			iterate_through_cell(soa, new_cell, i, boidParams);
-		
-
-		//iterate_through_cell(soa, cell + z_offset, i, boidParams);
 	}
 #endif
 
@@ -197,10 +175,20 @@ __device__ glm::vec3 apply_boid_rules(cudaArrays soa, const Shoal::paramsStruct&
 	alignment_component = velocity_sum - soa.velocities[i];
 	cohesion_component = position_sum - soa.positions[i];
 
-	return (float)d *
+	/*printf("separation: %f %f %f %f\n", 
+		params.s, 
+		separation_component.x, 
+		separation_component.y, 
+		separation_component.z);*/
+
+	glm::vec3 ret = (float)d * 
 		(params.s * separation_component
-			+ params.a * alignment_component
-			+ params.c * cohesion_component);
+		+ params.a * alignment_component
+		+ params.c * cohesion_component);
+
+	//printf("%f %f %f\n", ret.x, ret.y, ret.z);
+
+	return ret;
 }
 
 __device__ glm::vec3 speed_limit(glm::vec3 vel, const Shoal::paramsStruct& params)
@@ -339,20 +327,23 @@ __global__ void calculateBoidsKernel(cudaArrays soa,
 	//apply_boid_rules(soa, params, i, 1);
 
 #else
-	/*
+	
 	glm::vec3 new_vel;
-	new_vel = soa.velocities[i]
-		+ apply_boid_rules(soa, params, i, 1);
+	glm::vec3 ret = apply_boid_rules(soa, params, i, 1);
+	//printf("%f %f %f\n", ret.x, ret.y, ret.z);
+	new_vel = soa.velocities[i] + ret;
+	//printf("%f %f\n", new_vel.x - soa.velocities[i].x, new_vel.y - soa.velocities[i].y);
 	new_vel = speed_limit(new_vel, params);
 	new_vel = turn_from_wall(soa.positions[i], new_vel, params);
 
 	glm::vec3 new_pos = soa.positions[i] + (float)d * new_vel;
 	new_pos = teleport_through_wall(new_pos);
-	*/
+	
 
-	//soa.velocities_bb[i] = new_vel;
-	//soa.positions_bb[i] = new_pos;
+	soa.velocities_bb[i] = new_vel;
+	soa.positions_bb[i] = new_pos;
 
+	/*
 	soa.velocities_bb[i] = soa.velocities[i];
 	soa.positions_bb[i] = soa.positions[i];
 
@@ -364,6 +355,7 @@ __global__ void calculateBoidsKernel(cudaArrays soa,
 	}
 
 	apply_boid_rules(soa, params, i, 1);
+	*/
 
 
 #endif
