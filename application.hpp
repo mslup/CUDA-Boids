@@ -14,7 +14,7 @@ public:
 
 	void run();
 	
-	constexpr static int N = 1030;
+	constexpr static int N = 5000;
 	
 	void updateCameraAngles(float xoffset, float yoffset);
 	void updateCameraZoom(float yoffset);

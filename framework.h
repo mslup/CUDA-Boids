@@ -25,7 +25,7 @@
 
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 800;
-constexpr float MIN_R = 0.3f;
+constexpr float MIN_R = 0.1f;
 constexpr float GRID_R = 2 * MIN_R;
 constexpr float LEFT_WALL = -1;
 constexpr float DOWN_WALL = -1;
