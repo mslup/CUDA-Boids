@@ -14,11 +14,18 @@ public:
 
 	void run();
 
-	constexpr static int N = 4000;
+	constexpr static int N = BOID_COUNT;
+	constexpr static int WIDTH = 800;
+	constexpr static int HEIGHT = 800;
 
-	void updateCameraAngles(float xoffset, float yoffset);
+	constexpr static float LEFT_WALL = -2;
+	constexpr static float DOWN_WALL = -2;
+	constexpr static float BACK_WALL = -2;
+	constexpr static float WORLD_WIDTH = -2 * LEFT_WALL;
+
+	void processMouseMovement(float xoffset, float yoffset);
 	void updateCameraZoom(float yoffset);
-	void updateCameraPos(int);
+	void processKeyboard(int);
 
 private:
 	constexpr static float X = -LEFT_WALL;
@@ -61,6 +68,7 @@ private:
 	float x, y, z;
 
 	bool pause = false;
+	bool freeCamera = false;
 	double deltaTime;
 
 	struct cudaArrays soa;
@@ -72,7 +80,7 @@ private:
 	const size_t vec_size = N * sizeof(glm::vec3);
 	const size_t int_size = N * sizeof(int);
 
-	void imGuiFrame();
+	void imGuiFrame(int);
 	void create_buffer_objects();
 	void update();
 	void initValues();

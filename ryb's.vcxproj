@@ -198,9 +198,6 @@
     <ClInclude Include="window.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="todo.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <Natvis Include="ImGUI\imgui.natvis">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>

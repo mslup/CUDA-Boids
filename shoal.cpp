@@ -21,7 +21,6 @@ glm::mat4 Shoal::calculate_rotate(glm::vec3 pos, glm::vec3 vel)
 	);
 }
 
-
 void Shoal::calculate_all_models()
 {
 	for (int i = 0; i < Application::N; i++)
@@ -74,29 +73,29 @@ glm::vec3 Shoal::apply_boid_rules(int i, float d)
 
 glm::vec3 Shoal::turn_from_wall(glm::vec3 pos, glm::vec3 vel, float d)
 {
-	float dx_right = -LEFT_WALL - pos.x;
-	float dx_left = pos.x - LEFT_WALL;
-	float dy_up = -DOWN_WALL - pos.y;
-	float dy_down = pos.y - DOWN_WALL;
-	float dz_front = -BACK_WALL - pos.z;
-	float dz_back = pos.z - BACK_WALL;
+	float dx_right = -Application::LEFT_WALL - pos.x;
+	float dx_left = pos.x - Application::LEFT_WALL;
+	float dy_up = -Application::DOWN_WALL - pos.y;
+	float dy_down = pos.y - Application::DOWN_WALL;
+	float dz_front = -Application::BACK_WALL - pos.z;
+	float dz_back = pos.z - Application::BACK_WALL;
 
 	float len = glm::length(vel);
 
 	glm::vec3 vel_change = glm::vec3(0, 0, 0);
 
 	if (dx_right < behaviourParams.margin)
-		vel_change.x -= behaviourParams.turn_factor * len * (pos.x + LEFT_WALL + behaviourParams.margin);
+		vel_change.x -= behaviourParams.turn_factor * len * (pos.x + Application::LEFT_WALL + behaviourParams.margin);
 	if (dx_left < behaviourParams.margin)
-		vel_change.x += behaviourParams.turn_factor * len * (LEFT_WALL - pos.x + behaviourParams.margin);
+		vel_change.x += behaviourParams.turn_factor * len * (Application::LEFT_WALL - pos.x + behaviourParams.margin);
 	if (dy_up < behaviourParams.margin)
-		vel_change.y -= behaviourParams.turn_factor * len * (pos.y + DOWN_WALL + behaviourParams.margin);
+		vel_change.y -= behaviourParams.turn_factor * len * (pos.y + Application::DOWN_WALL + behaviourParams.margin);
 	if (dy_down < behaviourParams.margin)
-		vel_change.y += behaviourParams.turn_factor * len * (DOWN_WALL - pos.y + behaviourParams.margin);
+		vel_change.y += behaviourParams.turn_factor * len * (Application::DOWN_WALL - pos.y + behaviourParams.margin);
 	if (dz_front < behaviourParams.margin)
-		vel_change.z -= behaviourParams.turn_factor * len * (pos.z + BACK_WALL + behaviourParams.margin);
+		vel_change.z -= behaviourParams.turn_factor * len * (pos.z + Application::BACK_WALL + behaviourParams.margin);
 	if (dz_back < behaviourParams.margin)
-		vel_change.z += behaviourParams.turn_factor * len * (BACK_WALL - pos.z + behaviourParams.margin);
+		vel_change.z += behaviourParams.turn_factor * len * (Application::BACK_WALL - pos.z + behaviourParams.margin);
 
 	return vel + d * vel_change;
 }
@@ -141,7 +140,7 @@ void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResour
 	size_t mat_size = Application::N * sizeof(glm::mat4);
 	size_t vec_size = Application::N * sizeof(glm::vec3);
 	size_t int_size = Application::N * sizeof(int);
-	size_t max_density = (int)glm::ceil(WORLD_WIDTH / Shoal::MIN_GRID_R);
+	size_t max_density = (int)glm::ceil(Application::WORLD_WIDTH / Shoal::MIN_GRID_R);
 	size_t max_grid_size = max_density * max_density * max_density * sizeof(int);
 
 	gpuErrchk(cudaMemset(soa.grid_boids, 0, int_size));

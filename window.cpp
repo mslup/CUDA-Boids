@@ -4,8 +4,8 @@ Window::Window(Application *parent)
 {
 	app = parent;
 
-	width = 800;
-	height = 800;
+	width = Application::WIDTH;
+	height = Application::HEIGHT;
 
 	lastX = width / 2;
 	lastY = height / 2;
@@ -69,7 +69,7 @@ Window::Window(Application *parent)
 			wnd.lastX = xpos;
 			wnd.lastY = ypos;
 
-			//wnd.app->updateCameraAngles(xoffset, yoffset);
+			wnd.app->processMouseMovement(xoffset, yoffset);
 		});
 
 	glfwSetScrollCallback(wndptr, 
@@ -96,28 +96,24 @@ void Window::processInput()
 	if (glfwGetKey(wndptr, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(wndptr, true);
 
-	int cameraPosKeys[6] = {
+	constexpr int len = 11;
+	int cameraPosKeys[len] = {
 		GLFW_KEY_W,
 		GLFW_KEY_S,
 		GLFW_KEY_A,
 		GLFW_KEY_D,
 		GLFW_KEY_SPACE,
 		GLFW_KEY_LEFT_SHIFT,
+		GLFW_KEY_Q,
+		GLFW_KEY_E,
+		GLFW_KEY_1,
+		GLFW_KEY_3,
+		GLFW_KEY_F
 	};
 
-	for (int i = 0; i < 6; i++)
+	for (int i = 0; i < len; i++)
 	{
 		if (glfwGetKey(wndptr, cameraPosKeys[i]) == GLFW_PRESS)
-			app->updateCameraPos(cameraPosKeys[i]);
+			app->processKeyboard(cameraPosKeys[i]);
 	}
-
-	//todo: do
-	if (glfwGetKey(wndptr, GLFW_KEY_Q) == GLFW_PRESS)
-		app->updateCameraAngles(-5, 0);
-	if (glfwGetKey(wndptr, GLFW_KEY_E) == GLFW_PRESS)
-		app->updateCameraAngles(5, 0);
-	if (glfwGetKey(wndptr, GLFW_KEY_1) == GLFW_PRESS)
-		app->updateCameraAngles(0, 5);
-	if (glfwGetKey(wndptr, GLFW_KEY_3) == GLFW_PRESS)
-		app->updateCameraAngles(0, -5);
 }

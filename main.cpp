@@ -2,17 +2,10 @@
 #include <ctime>
 #include <cstdlib>
 
-void checkCudaError() {
-	cudaError_t error = cudaGetLastError();
-	if (error != cudaSuccess) {
-		std::cerr << "CUDA error: " << cudaGetErrorString(error) << std::endl;
-	}
-}
-
 void callKernels(int blocks_per_grid, int max_threads, double deltaTime,
 	glm::mat4* models, Shoal* shoal, struct cudaArrays soa)
 {
-	calculateGridKernel << <blocks_per_grid, max_threads >> > (soa, shoal->behaviourParams.visibility_radius);
+	calculateGridKernel<<<blocks_per_grid, max_threads>>>(soa, shoal->behaviourParams.visibility_radius);
 	gpuErrchk(cudaPeekAtLastError());
 	gpuErrchk(cudaDeviceSynchronize());
 
@@ -20,11 +13,11 @@ void callKernels(int blocks_per_grid, int max_threads, double deltaTime,
 	gpuErrchk(cudaPeekAtLastError());
 	gpuErrchk(cudaDeviceSynchronize());
 
-	calculateGridStartsKernel << <blocks_per_grid, max_threads >> > (soa);
+	calculateGridStartsKernel<<<blocks_per_grid, max_threads>>>(soa);
 	gpuErrchk(cudaPeekAtLastError());
 	gpuErrchk(cudaDeviceSynchronize());
 
-	calculateBoidsKernel << <blocks_per_grid, max_threads >> > (soa, shoal->behaviourParams, 
+	calculateBoidsKernel<<<blocks_per_grid, max_threads>>>(soa, shoal->behaviourParams, 
 		deltaTime, models);
 	gpuErrchk(cudaPeekAtLastError());
 	gpuErrchk(cudaDeviceSynchronize());

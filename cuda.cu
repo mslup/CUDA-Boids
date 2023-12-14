@@ -1,13 +1,15 @@
 #include "framework.h"
 #include <stdio.h>
 
+
+
 __device__ int calculate_grid_index(glm::vec3 pos, float grid_radius)
 {
-	int gridX = (int)glm::floor((pos.x - LEFT_WALL) / grid_radius);
-	int gridY = (int)glm::floor((pos.y - DOWN_WALL) / grid_radius);
-	int gridZ = (int)glm::floor((pos.z - BACK_WALL) / grid_radius);
+	int gridX = (int)glm::floor((pos.x - Application::LEFT_WALL) / grid_radius);
+	int gridY = (int)glm::floor((pos.y - Application::DOWN_WALL) / grid_radius);
+	int gridZ = (int)glm::floor((pos.z - Application::BACK_WALL) / grid_radius);
 
-	int gridSize = (int)glm::ceil(WORLD_WIDTH / grid_radius);
+	int gridSize = (int)glm::ceil(Application::WORLD_WIDTH / grid_radius);
 	gridX = glm::clamp(gridX, 0, gridSize - 1);
 	gridY = glm::clamp(gridY, 0, gridSize - 1);
 	gridZ = glm::clamp(gridZ, 0, gridSize - 1);
@@ -91,7 +93,7 @@ __device__ glm::vec3 apply_boid_rules(const cudaArrays &soa, const Shoal::behavi
 	}
 #else
 	float grid_radius = 2 * behaviourParams.visibility_radius;
-	int density = (int)glm::ceil(WORLD_WIDTH / grid_radius);
+	int density = (int)glm::ceil(Application::WORLD_WIDTH / grid_radius);
 	int cell = calculate_grid_index(soa.positions[i], grid_radius);
 	int gridX = cell % density;
 	int gridY = (cell / density) % density;
@@ -102,17 +104,17 @@ __device__ glm::vec3 apply_boid_rules(const cudaArrays &soa, const Shoal::behavi
 
 	int x_offset, y_offset, z_offset;
 
-	if (soa.positions[i].x >= LEFT_WALL + (gridX + 0.5) * grid_radius)
+	if (soa.positions[i].x >= Application::LEFT_WALL + (gridX + 0.5) * grid_radius)
 		x_offset = 1;
 	else
 		x_offset = -1;
 
-	if (soa.positions[i].y >= DOWN_WALL + (gridY + 0.5) * grid_radius)
+	if (soa.positions[i].y >= Application::DOWN_WALL + (gridY + 0.5) * grid_radius)
 		y_offset = density;
 	else
 		y_offset = -density;
 
-	if (soa.positions[i].z >= BACK_WALL + (gridZ + 0.5) * grid_radius)
+	if (soa.positions[i].z >= Application::BACK_WALL + (gridZ + 0.5) * grid_radius)
 		z_offset = densitysq;
 	else
 		z_offset = -densitysq;
@@ -161,29 +163,29 @@ __device__ glm::vec3 apply_boid_rules(const cudaArrays &soa, const Shoal::behavi
 
 __device__ glm::vec3 turn_from_wall(glm::vec3 pos, glm::vec3 vel, const Shoal::behaviourParamsStruct& behaviourParams, float d)
 {
-	float dx_right = -LEFT_WALL - pos.x;
-	float dx_left = pos.x - LEFT_WALL;
-	float dy_up = -DOWN_WALL - pos.y;
-	float dy_down = pos.y - DOWN_WALL;
-	float dz_front = -BACK_WALL - pos.z;
-	float dz_back = pos.z - BACK_WALL;
+	float dx_right = -Application::LEFT_WALL - pos.x;
+	float dx_left = pos.x - Application::LEFT_WALL;
+	float dy_up = -Application::DOWN_WALL - pos.y;
+	float dy_down = pos.y - Application::DOWN_WALL;
+	float dz_front = -Application::BACK_WALL - pos.z;
+	float dz_back = pos.z - Application::BACK_WALL;
 
 	float len = glm::length(vel);
 
 	glm::vec3 vel_change = glm::vec3(0, 0, 0);
 
 	if (dx_right < behaviourParams.margin)
-		vel_change.x -= behaviourParams.turn_factor * len * (pos.x + LEFT_WALL + behaviourParams.margin);
+		vel_change.x -= behaviourParams.turn_factor * len * (pos.x + Application::LEFT_WALL + behaviourParams.margin);
 	if (dx_left < behaviourParams.margin)
-		vel_change.x += behaviourParams.turn_factor * len * (LEFT_WALL - pos.x + behaviourParams.margin);
+		vel_change.x += behaviourParams.turn_factor * len * (Application::LEFT_WALL - pos.x + behaviourParams.margin);
 	if (dy_up < behaviourParams.margin)
-		vel_change.y -= behaviourParams.turn_factor * len * (pos.y + DOWN_WALL + behaviourParams.margin);
+		vel_change.y -= behaviourParams.turn_factor * len * (pos.y + Application::DOWN_WALL + behaviourParams.margin);
 	if (dy_down < behaviourParams.margin)
-		vel_change.y += behaviourParams.turn_factor * len * (DOWN_WALL - pos.y + behaviourParams.margin);
+		vel_change.y += behaviourParams.turn_factor * len * (Application::DOWN_WALL - pos.y + behaviourParams.margin);
 	if (dz_front < behaviourParams.margin)
-		vel_change.z -= behaviourParams.turn_factor * len * (pos.z + BACK_WALL + behaviourParams.margin);
+		vel_change.z -= behaviourParams.turn_factor * len * (pos.z + Application::BACK_WALL + behaviourParams.margin);
 	if (dz_back < behaviourParams.margin)
-		vel_change.z += behaviourParams.turn_factor * len * (BACK_WALL - pos.z + behaviourParams.margin);
+		vel_change.z += behaviourParams.turn_factor * len * (Application::BACK_WALL - pos.z + behaviourParams.margin);
 
 	return vel + d * vel_change;
 }

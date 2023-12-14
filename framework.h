@@ -1,5 +1,17 @@
 #pragma once
 
+// #########################
+//#define CPU 
+// Build > Rebuild solution
+// #########################
+
+#ifdef CPU
+#define BOID_COUNT 4000
+#else
+#define BOID_COUNT 50000
+//#define NAIVE
+#endif
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
@@ -22,13 +34,6 @@
 #include "ImGUI/imgui.h"
 #include "ImGUI/imgui_impl_glfw.h"
 #include "ImGUI/imgui_impl_opengl3.h"
-
-constexpr int WIDTH = 800;
-constexpr int HEIGHT = 800;
-constexpr float LEFT_WALL = -2;
-constexpr float DOWN_WALL = -2;
-constexpr float BACK_WALL = -2;
-constexpr float WORLD_WIDTH = -2 * LEFT_WALL;
 
 struct cudaArrays {
 	glm::mat4* models;
@@ -60,4 +65,3 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort =
 	}
 }
 
-#define CPU 

@@ -8,7 +8,7 @@ public:
 	constexpr static int vertexCount = 12;
 
 	constexpr static float MIN_SEP_FACTOR = 0;
-	constexpr static float MAX_SEP_FACTOR = 1e-1 / 2;
+	constexpr static float MAX_SEP_FACTOR = 1e-1 / 4;
 	constexpr static float SEP_DIVISOR = 10 / MAX_SEP_FACTOR;
 	constexpr static float MIN_ALN_FACTOR = 0;
 	constexpr static float MAX_ALN_FACTOR = 10;
@@ -18,6 +18,8 @@ public:
 	constexpr static float MAX_MAXSPEED = 1;
 	constexpr static float MAX_TURN_FACTOR = 30;
 	constexpr static float MIN_TURN_FACTOR = 1;
+	constexpr static float MIN_MARGIN = 0;
+	constexpr static float MAX_MARGIN = 0.5f;
 	constexpr static float MIN_R = 0.04f;
 	constexpr static float MAX_R = 0.5f;
 	constexpr static float MIN_GRID_R = 2 * MIN_R;

@@ -128,7 +128,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="todo.txt" />
     <Text Include="cube_vertex.glsl">
       <Filter>Shaders</Filter>
     </Text>

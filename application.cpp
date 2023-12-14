@@ -22,7 +22,7 @@ Application::Application()
 
 	cubeShader->use();
 #ifdef CPU
-	cubeShader->setFloat3("cubeColor", 
+	cubeShader->setFloat3("cubeColor",
 		cubeColorCpu.r / 255.0f,
 		cubeColorCpu.g / 255.0f,
 		cubeColorCpu.b / 255.0f);
@@ -34,8 +34,6 @@ Application::Application()
 
 	size_t max_density = (int)glm::ceil(WORLD_WIDTH / Shoal::MIN_GRID_R);
 	size_t max_grid_size = max_density * max_density * max_density * sizeof(int);
-
-	std::cout << max_grid_size << std::endl;
 
 	gpuErrchk(cudaMalloc(&soa.models, mat_size));
 	gpuErrchk(cudaMalloc(&soa.positions, vec_size));
@@ -98,7 +96,6 @@ void Application::run()
 	while (!glfwWindowShouldClose(window->wndptr))
 	{
 		window->processInput();
-		imGuiFrame();
 
 		double currentTime = glfwGetTime();
 		deltaTime = currentTime - previousTime;
@@ -112,7 +109,8 @@ void Application::run()
 			num_frames = 0;
 			previousFpsTime += 1.0;
 		}
-		ImGui::Text("%d fps", fps);
+
+		imGuiFrame(fps);
 
 		glClearColor(
 			backColor.r / 255.0f,
@@ -147,7 +145,7 @@ void Application::run()
 		boidShader->setMat4("projection", proj);
 		boidShader->setMat4("view", view);
 
-		glDrawElementsInstanced(GL_TRIANGLES, Shoal::vertexCount, GL_UNSIGNED_INT, 0, N);	
+		glDrawElementsInstanced(GL_TRIANGLES, Shoal::vertexCount, GL_UNSIGNED_INT, 0, N);
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -157,34 +155,92 @@ void Application::run()
 	}
 }
 
-void Application::imGuiFrame()
+void Application::imGuiFrame(int fps)
 {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	ImGui::Begin("Menu", NULL, 0);
+	if (!ImGui::Begin("Menu", NULL, 0))
+	{
+		ImGui::End();
+		return;
+	}
+
+	ImGui::PushItemWidth(-ImGui::GetWindowWidth() * 0.45f);
+	//ImGui::PushItemWidth(ImGui::GetFontSize() * -6);
+
+	ImGui::Text("%d fps", fps);
 
 	if (ImGui::Button("Pause"))
 	{
 		pause = !pause;
 	}
 
-	ImGui::SliderFloat("Cohesion", &shoal->behaviourParams.coh_factor,
-		Shoal::MIN_COH_FACTOR, Shoal::MAX_COH_FACTOR);
-	ImGui::SliderFloat("Separation", &shoal->behaviourParams.sep_factor,
-		Shoal::MIN_SEP_FACTOR * Shoal::SEP_DIVISOR, Shoal::MAX_SEP_FACTOR * Shoal::SEP_DIVISOR);
-	ImGui::SliderFloat("Alignment", &shoal->behaviourParams.aln_factor,
-		Shoal::MIN_ALN_FACTOR, Shoal::MAX_ALN_FACTOR);
-	ImGui::SliderFloat("Maximum speed", &shoal->behaviourParams.max_speed,
-		shoal->behaviourParams.min_speed, Shoal::MAX_MAXSPEED);
-	ImGui::SliderFloat("Minimum speed", &shoal->behaviourParams.min_speed,
-		Shoal::MIN_MINSPEED, shoal->behaviourParams.max_speed);
-	ImGui::SliderFloat("Turn from walls", &shoal->behaviourParams.turn_factor,
-		Shoal::MIN_TURN_FACTOR, Shoal::MAX_TURN_FACTOR);
-	ImGui::SliderFloat("Visibility radius", &shoal->behaviourParams.visibility_radius,
-		Shoal::MIN_R, Shoal::MAX_R);
+	if (ImGui::CollapsingHeader("Boid parameters"))
+	{
+		ImGui::SeparatorText("Neighbour behaviour");
+		ImGui::SliderFloat("Cohesion", &shoal->behaviourParams.coh_factor,
+			Shoal::MIN_COH_FACTOR, Shoal::MAX_COH_FACTOR);
+		ImGui::SliderFloat("Separation", &shoal->behaviourParams.sep_factor,
+			Shoal::MIN_SEP_FACTOR * Shoal::SEP_DIVISOR, Shoal::MAX_SEP_FACTOR * Shoal::SEP_DIVISOR);
+		ImGui::SliderFloat("Alignment", &shoal->behaviourParams.aln_factor,
+			Shoal::MIN_ALN_FACTOR, Shoal::MAX_ALN_FACTOR);
+		ImGui::SliderFloat("Visibility radius", &shoal->behaviourParams.visibility_radius,
+			Shoal::MIN_R, Shoal::MAX_R);
 
+		ImGui::SeparatorText("Restrictions");
+		ImGui::SliderFloat("Maximum speed", &shoal->behaviourParams.max_speed,
+			shoal->behaviourParams.min_speed, Shoal::MAX_MAXSPEED);
+		ImGui::SliderFloat("Minimum speed", &shoal->behaviourParams.min_speed,
+			Shoal::MIN_MINSPEED, shoal->behaviourParams.max_speed);
+		ImGui::SliderFloat("Turn from walls", &shoal->behaviourParams.turn_factor,
+			Shoal::MIN_TURN_FACTOR, Shoal::MAX_TURN_FACTOR);
+		ImGui::SliderFloat("Wall margin", &shoal->behaviourParams.margin,
+			Shoal::MIN_MARGIN, Shoal::MAX_MARGIN);
+	}
+
+	if (ImGui::CollapsingHeader("Information"))
+	{
+		float grid_radius = 2 * shoal->behaviourParams.visibility_radius;
+		int density = (int)glm::ceil(Application::WORLD_WIDTH / grid_radius);
+		int grid_size = density * density * density;
+
+		ImGui::Text("Number of boids: %d", N);
+
+		ImGui::Text("Current grid density: %d", density);
+		ImGui::Text("Number of cells: % d", grid_size);
+
+#ifdef CPU
+		ImGui::Text("Solution: CPU");
+#else
+#ifdef NAIVE
+		ImGui::Text("Solution: GPU (naive)");
+#else
+		ImGui::Text("Solution: GPU (grid)");
+#endif
+#endif
+	}
+
+	if (ImGui::CollapsingHeader("Camera controls"))
+	{
+		ImGui::SeparatorText("Position");
+		ImGui::BulletText("W - forward");
+		ImGui::BulletText("S - backward");
+		ImGui::BulletText("A - left");
+		ImGui::BulletText("R - right");
+		ImGui::BulletText("Space - up");
+		ImGui::BulletText("LShift - down");
+
+		ImGui::SeparatorText("Angles");
+		ImGui::BulletText("Q - look left");
+		ImGui::BulletText("E - look right");
+		ImGui::BulletText("1 - look up");
+		ImGui::BulletText("3 - look down");
+
+		ImGui::SeparatorText("Misc");
+		ImGui::BulletText("F - toggle mouse/keyboard");
+	}
 }
 
 void Application::update()
@@ -247,26 +303,10 @@ void Application::create_buffer_objects()
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
 }
 
-void Application::updateCameraAngles(float xoffset, float yoffset)
+void Application::processMouseMovement(float xoffset, float yoffset)
 {
-	float sensitivity = 0.1f; // change this value to your liking
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
-
-	camera->Yaw += xoffset;
-	camera->Pitch += yoffset;
-
-	// make sure that when pitch is out of bounds, screen doesn't get flipped
-	if (camera->Pitch > 89.0f)
-		camera->Pitch = 89.0f;
-	if (camera->Pitch < -89.0f)
-		camera->Pitch = -89.0f;
-
-	glm::vec3 front;
-	front.x = cos(glm::radians(camera->Yaw)) * cos(glm::radians(camera->Pitch));
-	front.y = sin(glm::radians(camera->Pitch));
-	front.z = sin(glm::radians(camera->Yaw)) * cos(glm::radians(camera->Pitch));
-	camera->Front = glm::normalize(front);
+	if (freeCamera)
+		camera->Rotate(xoffset, yoffset, true);
 }
 
 void Application::updateCameraZoom(float yoffset)
@@ -274,7 +314,24 @@ void Application::updateCameraZoom(float yoffset)
 	camera->ProcessMouseScroll(yoffset);
 }
 
-void Application::updateCameraPos(int key)
+void Application::processKeyboard(int key)
 {
+	if (key == GLFW_KEY_F)
+	{
+		freeCamera = !freeCamera;
+		if (freeCamera)
+			glfwSetInputMode(window->wndptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		else
+			glfwSetInputMode(window->wndptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+		return;
+	}
+
+	if (freeCamera && (key == GLFW_KEY_Q ||
+		key == GLFW_KEY_E ||
+		key == GLFW_KEY_1 ||
+		key == GLFW_KEY_3))
+		return; 
+
 	camera->ProcessKeyboard(key, deltaTime);
 }
