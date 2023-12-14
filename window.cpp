@@ -32,6 +32,9 @@ Window::Window(Application *parent)
 	}
 
 	glViewport(0, 0, width, height);
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
 
 	//glfwSetInputMode(wndptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 

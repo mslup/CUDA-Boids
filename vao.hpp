@@ -11,5 +11,4 @@ public:
 	unsigned int cubeEBO;
 	unsigned int modelVBO;
 	struct cudaGraphicsResource* cudaVBO;
-
 };

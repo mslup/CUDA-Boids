@@ -6,16 +6,16 @@ class Window;
 class VAO;
 class Camera;
 
-class Application 
+class Application
 {
 public:
 	Application();
 	~Application();
 
 	void run();
-	
+
 	constexpr static int N = 10000;
-	
+
 	void updateCameraAngles(float xoffset, float yoffset);
 	void updateCameraZoom(float yoffset);
 	void updateCameraPos(int);
@@ -29,24 +29,33 @@ private:
 		 X,  Y,  Z,
 		-X,  Y,  Z,
 		-X, -Y,  Z,
-		 X, -Y,  Z, 
+		 X, -Y,  Z,
 		 X,  Y, -Z,
 		-X,  Y, -Z,
 		-X, -Y, -Z,
 		 X, -Y, -Z
 	};
 
-	const unsigned int cubeIndices[4 * 4] = {
-		0, 1, 2, 3,
-		4, 5, 6, 7,
-		2, 3, 6, 7,
-		0, 1, 4, 5
+	const unsigned int cubeIndices[2 * 12] = {
+		0, 1,
+		1, 2,
+		2, 3,
+		3, 0,
+		4, 5,
+		5, 6,
+		6, 7,
+		7, 4,
+		1, 5,
+		2, 6,
+		3, 7,
+		0, 4
 	};
 
 	Shoal* shoal;
 	Window* window;
 	VAO* vao;
-	Shader* shader;
+	Shader* boidShader;
+	Shader* cubeShader;
 	Camera* camera;
 
 	float x, y, z;

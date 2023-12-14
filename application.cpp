@@ -18,13 +18,21 @@ Application::Application()
 
 	create_buffer_objects();
 
-	shader = new Shader("./vertex.glsl", "./fragment.glsl");
-	shader->use();
+	boidShader = new Shader("./boid_vertex.glsl", "./fragment.glsl");
+	cubeShader = new Shader("./cube_vertex.glsl", "./fragment.glsl");
 
-#ifdef CPU
-	shader->setFloat3("boidColor", 0.2f, 0.7f, 0.4f);
-#else
-	shader->setFloat3("boidColor",
+	//boidShader->use();
+
+//#ifdef CPU
+//	shader->setFloat3("boidColor", 0.2f, 0.7f, 0.4f);
+//#else
+//	boidShader->setFloat3("boidColor",
+//		boidColor.r / 255.0f,
+//		boidColor.g / 255.0f,
+//		boidColor.b / 255.0f);
+
+	cubeShader->use();
+	cubeShader->setFloat3("cubeColor", 
 		boidColor.r / 255.0f,
 		boidColor.g / 255.0f,
 		boidColor.b / 255.0f);
@@ -46,7 +54,7 @@ Application::Application()
 
 	gpuErrchk(cudaMemcpy(soa.positions, shoal->positions, vec_size, cudaMemcpyHostToDevice));
 	gpuErrchk(cudaMemcpy(soa.velocities, shoal->velocities, vec_size, cudaMemcpyHostToDevice));
-#endif
+	//#endif
 }
 
 Application::~Application()
@@ -60,7 +68,8 @@ Application::~Application()
 	delete vao;
 	delete camera;
 	delete window;
-	delete shader; 
+	delete boidShader;
+	delete cubeShader;
 
 #ifndef CPU
 	gpuErrchk(cudaFree(soa.models));
@@ -114,7 +123,16 @@ void Application::run()
 			backColor.r / 255.0f,
 			backColor.g / 255.0f,
 			backColor.b / 255.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glm::mat4 proj = camera->GetProjectionMatrix(window->width, window->height);
+		glm::mat4 view = camera->GetViewMatrix();
+
+		glBindVertexArray(vao->cubeVAO);
+		cubeShader->use();
+		cubeShader->setMat4("projection", proj);
+		cubeShader->setMat4("view", view);
+		glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, (void*)0);
 
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glBindVertexArray(vao->boidVAO);
@@ -128,11 +146,15 @@ void Application::run()
 			//pause = true;
 		}
 
-		shader->setMat4("projection", camera->GetProjectionMatrix(window->width, window->height));
-		shader->setMat4("view", camera->GetViewMatrix());
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vao->boidEBO);
+		boidShader->use();
+		boidShader->setMat4("projection", proj);
+		boidShader->setMat4("view", view);
+
 		glDrawElementsInstanced(GL_TRIANGLES, Shoal::vertexCount, GL_UNSIGNED_INT, 0, N);
+
+
+		
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -155,15 +177,15 @@ void Application::imGuiFrame()
 		pause = !pause;
 	}
 
-	ImGui::SliderFloat("Cohesion", &shoal->behaviourParams.coh_factor, 
+	ImGui::SliderFloat("Cohesion", &shoal->behaviourParams.coh_factor,
 		Shoal::MIN_COH_FACTOR, Shoal::MAX_COH_FACTOR);
-	ImGui::SliderFloat("Separation", &shoal->behaviourParams.sep_factor, 
+	ImGui::SliderFloat("Separation", &shoal->behaviourParams.sep_factor,
 		Shoal::MIN_SEP_FACTOR * Shoal::SEP_DIVISOR, Shoal::MAX_SEP_FACTOR * Shoal::SEP_DIVISOR);
-	ImGui::SliderFloat("Alignment", &shoal->behaviourParams.aln_factor, 
+	ImGui::SliderFloat("Alignment", &shoal->behaviourParams.aln_factor,
 		Shoal::MIN_ALN_FACTOR, Shoal::MAX_ALN_FACTOR);
-	ImGui::SliderFloat("Maximum speed", &shoal->behaviourParams.max_speed, 
+	ImGui::SliderFloat("Maximum speed", &shoal->behaviourParams.max_speed,
 		shoal->behaviourParams.min_speed, Shoal::MAX_MAXSPEED);
-	ImGui::SliderFloat("Minimum speed", &shoal->behaviourParams.min_speed, 
+	ImGui::SliderFloat("Minimum speed", &shoal->behaviourParams.min_speed,
 		Shoal::MIN_MINSPEED, shoal->behaviourParams.max_speed);
 	ImGui::SliderFloat("Turn from walls", &shoal->behaviourParams.turn_factor,
 		Shoal::MIN_TURN_FACTOR, Shoal::MAX_TURN_FACTOR);
@@ -183,8 +205,9 @@ void Application::update()
 
 void Application::create_buffer_objects()
 {
-	glGenBuffers(1, &vao->boidVBO);
+	// boids
 	glGenVertexArrays(1, &vao->boidVAO);
+	glGenBuffers(1, &vao->boidVBO);
 	glBindVertexArray(vao->boidVAO);
 
 	glEnableVertexAttribArray(0);
@@ -215,6 +238,20 @@ void Application::create_buffer_objects()
 	glVertexAttribDivisor(4, 1);
 
 	cudaGraphicsGLRegisterBuffer(&vao->cudaVBO, vao->modelVBO, cudaGraphicsMapFlagsWriteDiscard);
+
+	// cube
+	glGenVertexArrays(1, &vao->cubeVAO);
+	glGenBuffers(1, &vao->cubeVBO);
+	glBindVertexArray(vao->cubeVAO);
+
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, vao->cubeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+	glGenBuffers(1, &vao->cubeEBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vao->cubeEBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
 }
 
 void Application::updateCameraAngles(float xoffset, float yoffset)

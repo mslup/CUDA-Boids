@@ -70,12 +70,6 @@
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="fragment.glsl">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="vertex.glsl">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="ImGUI\imgui.natstepfilter">
       <Filter>ImGUI</Filter>
     </None>
@@ -135,6 +129,15 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="todo.txt" />
+    <Text Include="cube_vertex.glsl">
+      <Filter>Shaders</Filter>
+    </Text>
+    <Text Include="fragment.glsl">
+      <Filter>Shaders</Filter>
+    </Text>
+    <Text Include="boid_vertex.glsl">
+      <Filter>Shaders</Filter>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="ImGUI\imgui.natvis">
