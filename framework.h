@@ -30,7 +30,6 @@ constexpr float DOWN_WALL = -2;
 constexpr float BACK_WALL = -2;
 constexpr float WORLD_WIDTH = -2 * LEFT_WALL;
 
-//todo: move this to a different file
 struct cudaArrays {
 	glm::mat4* models;
 	glm::vec3* positions;
@@ -51,10 +50,6 @@ struct cudaArrays {
 #include "camera.hpp"
 #include "cuda.cuh"
 
-void callKernels(int blocks_per_grid, int max_threads,
-	double deltaTime, glm::mat4* models, Shoal*, cudaArrays
-	, float x, float y, float z);
-
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
 inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort = true)
 {
@@ -65,4 +60,4 @@ inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort =
 	}
 }
 
-//#define CPU 
+#define CPU 

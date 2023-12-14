@@ -1,8 +1,3 @@
-- check for errors
-- sciezki wykonania takie smae dla watkow
-- if odleglosc = 0 separation edge case
-- uniform vertices?
-- grid 3d
 - fix camera
 
 check:
@@ -15,6 +10,11 @@ check:
 - malloc before loop
 - refactor 
 - camera has projection matrix
+- grid 3d
+- check for errors
+- if odleglosc = 0 separation edge case
 
 wontfix:
 - shared memory??
+- uniform vertices?
+- sciezki wykonania takie smae dla watkow

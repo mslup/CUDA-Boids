@@ -14,7 +14,7 @@ public:
 
 	void run();
 
-	constexpr static int N = 10000;
+	constexpr static int N = 4000;
 
 	void updateCameraAngles(float xoffset, float yoffset);
 	void updateCameraZoom(float yoffset);
@@ -65,8 +65,9 @@ private:
 
 	struct cudaArrays soa;
 
-	const glm::vec3 backColor = glm::vec3(65, 55, 46);//84, 65, 78);
-	const glm::vec3 boidColor = glm::vec3(213, 189, 175);//167, 144, 165);
+	const glm::vec3 backColor = glm::vec3(65, 55, 46);
+	const glm::vec3 cubeColor = glm::vec3(213, 189, 175);
+	const glm::vec3 cubeColorCpu = glm::vec3(114, 219, 219);
 	const size_t mat_size = N * sizeof(glm::mat4);
 	const size_t vec_size = N * sizeof(glm::vec3);
 	const size_t int_size = N * sizeof(int);

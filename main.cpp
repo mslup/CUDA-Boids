@@ -10,7 +10,7 @@ void checkCudaError() {
 }
 
 void callKernels(int blocks_per_grid, int max_threads, double deltaTime,
-	glm::mat4* models, Shoal* shoal, struct cudaArrays soa, float x, float y, float z)
+	glm::mat4* models, Shoal* shoal, struct cudaArrays soa)
 {
 	calculateGridKernel << <blocks_per_grid, max_threads >> > (soa, shoal->behaviourParams.visibility_radius);
 	gpuErrchk(cudaPeekAtLastError());

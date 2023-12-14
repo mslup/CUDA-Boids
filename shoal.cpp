@@ -1,31 +1,26 @@
 #include "framework.h"
 
+void callKernels(int blocks_per_grid, int max_threads,
+	double deltaTime, glm::mat4* models, Shoal*, cudaArrays);
+
 glm::mat4 Shoal::calculate_rotate(glm::vec3 pos, glm::vec3 vel)
 {
-	//glm::vec3 v = glm::normalize(vel);
-	//glm::vec3 vT = glm::vec3(v.y, -v.x, 0); // LUB 1 ???????????
-	//return glm::mat4(glm::vec3(v, 0), glm::vec3(vT, 0), glm::vec3(pos, 1.0f));
-	return glm::mat4(1.0);
+	glm::vec3 v = glm::normalize(vel);
+
+	float c1 = sqrt(v.x * v.x + v.y * v.y);
+	float s1 = v.z;
+
+	float c2 = c1 ? v.x / c1 : 1.0;
+	float s2 = c1 ? v.y / c1 : 0.0;
+
+	return glm::mat4(
+		glm::vec4(v, 0),
+		glm::vec4(-s2, c2, 0, 0),
+		glm::vec4(-s1 * c2, -s1 * s2, c1, 0),
+		glm::vec4(pos, 1)
+	);
 }
 
-void Shoal::update_boids_cpu(double d)
-{
-	for (int i = 0; i < Application::N; ++i)
-	{
-		apply_boid_rules(i);
-		turn_from_wall(i);
-		speed_limit(i);
-		positions_bb[i] += (float)d * velocities_bb[i];
-		teleport_through_wall(i);
-
-		models[i] = calculate_rotate(positions_bb[i], velocities_bb[i]);
-	}
-
-	std::memcpy(velocities, velocities_bb, Application::N * sizeof(glm::vec3));
-	std::memcpy(positions, positions_bb, Application::N * sizeof(glm::vec3));
-
-	glBufferData(GL_ARRAY_BUFFER, sizeof(models), &(models)[0], GL_DYNAMIC_DRAW);
-}
 
 void Shoal::calculate_all_models()
 {
@@ -33,7 +28,7 @@ void Shoal::calculate_all_models()
 		models[i] = calculate_rotate(positions[i], velocities[i]);
 }
 
-void Shoal::apply_boid_rules(int i)
+glm::vec3 Shoal::apply_boid_rules(int i, float d)
 {
 	glm::vec3 separation_component(0);
 	glm::vec3 velocity_sum(0);
@@ -42,10 +37,17 @@ void Shoal::apply_boid_rules(int i)
 
 	for (int j = 0; j < Application::N; ++j)
 	{
-		float len = glm::length(positions[i] - positions[j]);
+		glm::vec3 diff = positions[i] - positions[j];
+		float len = glm::length(diff);
+		glm::vec3 norm = glm::normalize(diff);
+
 		if (i != j && len < behaviourParams.visibility_radius)
 		{
-			separation_component += positions[i] - positions[j];
+			if (len * len > 1e-10)
+				separation_component += norm / (len * len);
+			else
+				separation_component += glm::vec3(0.001, 0.001 * j, 0.001);
+
 			velocity_sum += velocities[j];
 			position_sum += positions[j];
 
@@ -57,59 +59,84 @@ void Shoal::apply_boid_rules(int i)
 	glm::vec3 cohesion_component;
 
 	if (neighbors == 0)
-		return;
+		return glm::vec3(0);
 
 	velocity_sum /= neighbors;
 	position_sum /= neighbors;
 	alignment_component = velocity_sum - velocities[i];
 	cohesion_component = position_sum - positions[i];
 
-	velocities_bb[i] += behaviourParams.sep_factor * separation_component 
-		+ behaviourParams.aln_factor * alignment_component 
-		+ behaviourParams.coh_factor * cohesion_component;
+	return d *
+		(behaviourParams.sep_factor / Shoal::SEP_DIVISOR * separation_component
+		+ behaviourParams.aln_factor * alignment_component
+		+ behaviourParams.coh_factor * cohesion_component);
 }
 
-void Shoal::turn_from_wall(int i)
+glm::vec3 Shoal::turn_from_wall(glm::vec3 pos, glm::vec3 vel, float d)
 {
-	float dx_right = 1 - positions_bb[i].x;
-	float dx_left = positions_bb[i].x + 1;
-	float dy_up = 1 - positions_bb[i].y;
-	float dy_down = positions_bb[i].y + 1;
+	float dx_right = -LEFT_WALL - pos.x;
+	float dx_left = pos.x - LEFT_WALL;
+	float dy_up = -DOWN_WALL - pos.y;
+	float dy_down = pos.y - DOWN_WALL;
+	float dz_front = -BACK_WALL - pos.z;
+	float dz_back = pos.z - BACK_WALL;
 
-	float len = glm::length(velocities_bb[i]);
+	float len = glm::length(vel);
+
+	glm::vec3 vel_change = glm::vec3(0, 0, 0);
 
 	if (dx_right < behaviourParams.margin)
-		velocities_bb[i].x -= behaviourParams.turn_factor * len / (dx_right * dx_right);
+		vel_change.x -= behaviourParams.turn_factor * len * (pos.x + LEFT_WALL + behaviourParams.margin);
 	if (dx_left < behaviourParams.margin)
-		velocities_bb[i].x += behaviourParams.turn_factor * len / (dx_left * dx_left);
+		vel_change.x += behaviourParams.turn_factor * len * (LEFT_WALL - pos.x + behaviourParams.margin);
 	if (dy_up < behaviourParams.margin)
-		velocities_bb[i].y -= behaviourParams.turn_factor * len / (dy_up * dy_up);
+		vel_change.y -= behaviourParams.turn_factor * len * (pos.y + DOWN_WALL + behaviourParams.margin);
 	if (dy_down < behaviourParams.margin)
-		velocities_bb[i].y += behaviourParams.turn_factor * len / (dy_down * dy_down);
+		vel_change.y += behaviourParams.turn_factor * len * (DOWN_WALL - pos.y + behaviourParams.margin);
+	if (dz_front < behaviourParams.margin)
+		vel_change.z -= behaviourParams.turn_factor * len * (pos.z + BACK_WALL + behaviourParams.margin);
+	if (dz_back < behaviourParams.margin)
+		vel_change.z += behaviourParams.turn_factor * len * (BACK_WALL - pos.z + behaviourParams.margin);
+
+	return vel + d * vel_change;
 }
 
-void Shoal::speed_limit(int i)
+glm::vec3 Shoal::speed_limit(glm::vec3 vel)
 {
-	if (glm::length(velocities_bb[i]) < behaviourParams.min_speed)
-		velocities_bb[i] = behaviourParams.min_speed * glm::normalize(velocities_bb[i]);
-	if (glm::length(velocities_bb[i]) > behaviourParams.max_speed)
-		velocities_bb[i] = behaviourParams.max_speed * glm::normalize(velocities_bb[i]);
+	if (glm::length(vel) < behaviourParams.min_speed)
+		return behaviourParams.min_speed * glm::normalize(vel);
+	if (glm::length(vel) > behaviourParams.max_speed)
+		return behaviourParams.max_speed * glm::normalize(vel);
+
+	return vel;
 }
 
-void Shoal::teleport_through_wall(int i)
+void Shoal::update_boids_cpu(double d)
 {
-	if (positions_bb[i].x > 1)
-		positions_bb[i].x = -1;
-	if (positions_bb[i].y > 1)
-		positions_bb[i].y = -1;
-	if (positions_bb[i].x < -1)
-		positions_bb[i].x = 1;
-	if (positions_bb[i].y < -1)
-		positions_bb[i].y = 1;
+	for (int i = 0; i < Application::N; ++i)
+	{
+		positions_bb[i] = glm::vec3(0);
+		velocities_bb[i] = glm::vec3(0);
+
+		glm::vec3 new_vel;
+		new_vel = velocities[i] + apply_boid_rules(i, (float)d);
+		new_vel = turn_from_wall(positions[i], new_vel, (float)d);
+		new_vel = speed_limit(new_vel);
+
+		glm::vec3 new_pos = positions[i] + (float)d * new_vel;
+
+		velocities_bb[i] = new_vel;
+		positions_bb[i] = new_pos;
+		models[i] = calculate_rotate(positions_bb[i], velocities_bb[i]);
+	}
+
+	std::memcpy(velocities, velocities_bb, Application::N * sizeof(glm::vec3));
+	std::memcpy(positions, positions_bb, Application::N * sizeof(glm::vec3));
+
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(models), &(models)[0], GL_DYNAMIC_DRAW);
 }
 
-void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResource* cudaVBO,
-	float x, float y, float z)
+void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResource* cudaVBO)
 {
 	size_t mat_size = Application::N * sizeof(glm::mat4);
 	size_t vec_size = Application::N * sizeof(glm::vec3);
@@ -129,7 +156,7 @@ void Shoal::update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResour
 	gpuErrchk(cudaGraphicsMapResources(1, &cudaVBO, 0));
 	gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&models, NULL, cudaVBO));
 
-	callKernels(blocks_per_grid, max_threads, d, models, this, soa, x, y, z);
+	callKernels(blocks_per_grid, max_threads, d, models, this, soa);
 
 	gpuErrchk(cudaGraphicsUnmapResources(1, &cudaVBO, 0));
 }

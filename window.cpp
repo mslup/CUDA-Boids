@@ -38,7 +38,6 @@ Window::Window(Application *parent)
 
 	//glfwSetInputMode(wndptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	//todo: you know what
 	glfwSetWindowUserPointer(wndptr, this);
 	glfwSetFramebufferSizeCallback(wndptr, 
 		[](GLFWwindow* window, int width, int height)

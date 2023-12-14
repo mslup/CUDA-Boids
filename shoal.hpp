@@ -22,7 +22,6 @@ public:
 	constexpr static float MAX_R = 0.5f;
 	constexpr static float MIN_GRID_R = 2 * MIN_R;
 
-	//todo: draw aquarium
 	struct behaviourParamsStruct {
 		float sep_factor, aln_factor, coh_factor,
 			margin, turn_factor, 
@@ -53,16 +52,14 @@ public:
 	glm::mat4 calculate_rotate(glm::vec3 pos, glm::vec3 vel);
 
 	void update_boids_cpu(double d);
-	void update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResource* cudaVBO
-		, float, float, float);
+	void update_boids_gpu(cudaArrays soa, double d, struct cudaGraphicsResource* cudaVBO);
 	void calculate_all_models();
 
 	//const int N = 5000;
 
 private:
-	void apply_boid_rules(int i);
-	void turn_from_wall(int i);
-	void speed_limit(int i);
-	void teleport_through_wall(int i);
+	glm::vec3 apply_boid_rules(int i, float d);
+	glm::vec3 turn_from_wall(glm::vec3 pos, glm::vec3 vel, float d);
+	glm::vec3 speed_limit(glm::vec3 vel);
 };
 

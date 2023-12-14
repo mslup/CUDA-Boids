@@ -1,6 +1,5 @@
 #include "framework.h"
 
-
 Application::Application()
 {
 	x = y = z = 0;
@@ -21,21 +20,17 @@ Application::Application()
 	boidShader = new Shader("./boid_vertex.glsl", "./fragment.glsl");
 	cubeShader = new Shader("./cube_vertex.glsl", "./fragment.glsl");
 
-	//boidShader->use();
-
-//#ifdef CPU
-//	shader->setFloat3("boidColor", 0.2f, 0.7f, 0.4f);
-//#else
-//	boidShader->setFloat3("boidColor",
-//		boidColor.r / 255.0f,
-//		boidColor.g / 255.0f,
-//		boidColor.b / 255.0f);
-
 	cubeShader->use();
+#ifdef CPU
 	cubeShader->setFloat3("cubeColor", 
-		boidColor.r / 255.0f,
-		boidColor.g / 255.0f,
-		boidColor.b / 255.0f);
+		cubeColorCpu.r / 255.0f,
+		cubeColorCpu.g / 255.0f,
+		cubeColorCpu.b / 255.0f);
+#else // GPU
+	cubeShader->setFloat3("cubeColor",
+		cubeColor.r / 255.0f,
+		cubeColor.g / 255.0f,
+		cubeColor.b / 255.0f);
 
 	size_t max_density = (int)glm::ceil(WORLD_WIDTH / Shoal::MIN_GRID_R);
 	size_t max_grid_size = max_density * max_density * max_density * sizeof(int);
@@ -54,7 +49,7 @@ Application::Application()
 
 	gpuErrchk(cudaMemcpy(soa.positions, shoal->positions, vec_size, cudaMemcpyHostToDevice));
 	gpuErrchk(cudaMemcpy(soa.velocities, shoal->velocities, vec_size, cudaMemcpyHostToDevice));
-	//#endif
+#endif
 }
 
 Application::~Application()
@@ -137,24 +132,22 @@ void Application::run()
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		glBindVertexArray(vao->boidVAO);
 		glBindBuffer(GL_ARRAY_BUFFER, vao->modelVBO);
+#ifdef CPU
+		glBufferData(GL_ARRAY_BUFFER, sizeof(shoal->models), shoal->models, GL_DYNAMIC_DRAW);
+#else // GPU
 		glBufferData(GL_ARRAY_BUFFER, mat_size, 0, GL_DYNAMIC_DRAW);
+#endif
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-		if (!pause)
-		{
-			update();
-			//pause = true;
-		}
 
+		if (!pause)
+			update();
 
 		boidShader->use();
 		boidShader->setMat4("projection", proj);
 		boidShader->setMat4("view", view);
 
-		glDrawElementsInstanced(GL_TRIANGLES, Shoal::vertexCount, GL_UNSIGNED_INT, 0, N);
-
-
-		
+		glDrawElementsInstanced(GL_TRIANGLES, Shoal::vertexCount, GL_UNSIGNED_INT, 0, N);	
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -199,7 +192,7 @@ void Application::update()
 #ifdef CPU
 	shoal->update_boids_cpu(deltaTime);
 #else
-	shoal->update_boids_gpu(soa, deltaTime, vao->cudaVBO, x, y, z);
+	shoal->update_boids_gpu(soa, deltaTime, vao->cudaVBO);
 #endif
 }
 

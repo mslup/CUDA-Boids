@@ -76,9 +76,13 @@ __device__ glm::vec3 apply_boid_rules(const cudaArrays &soa, const Shoal::behavi
 		float len = glm::length(diff);
 		glm::vec3 norm = glm::normalize(diff);
 
-		if (i != j && len < params.visibility_radius)
+		if (i != j && len < behaviourParams.visibility_radius)
 		{
-			separation_component += norm / len;
+			if (len * len > 1e-10)
+				separation_component += norm / (len * len);
+			else
+				separation_component += glm::vec3(0.001, 0.001 * j, 0.001);
+
 			velocity_sum += soa.velocities[j];
 			position_sum += soa.positions[j];
 
@@ -149,20 +153,10 @@ __device__ glm::vec3 apply_boid_rules(const cudaArrays &soa, const Shoal::behavi
 	alignment_component = velocity_sum - soa.velocities[i];
 	cohesion_component = position_sum - soa.positions[i];
 
-	return d * glm::vec3
+	return d * 
 		(behaviourParams.sep_factor / Shoal::SEP_DIVISOR * separation_component
 		+ behaviourParams.aln_factor * alignment_component
 		+ behaviourParams.coh_factor * cohesion_component);
-}
-
-__device__ glm::vec3 speed_limit(glm::vec3 vel, const Shoal::behaviourParamsStruct& behaviourParams)
-{
-	if (glm::length(vel) < behaviourParams.min_speed)
-		return behaviourParams.min_speed * glm::normalize(vel);
-	if (glm::length(vel) > behaviourParams.max_speed)
-		return behaviourParams.max_speed * glm::normalize(vel);
-
-	return vel;
 }
 
 __device__ glm::vec3 turn_from_wall(glm::vec3 pos, glm::vec3 vel, const Shoal::behaviourParamsStruct& behaviourParams, float d)
@@ -193,6 +187,18 @@ __device__ glm::vec3 turn_from_wall(glm::vec3 pos, glm::vec3 vel, const Shoal::b
 
 	return vel + d * vel_change;
 }
+
+
+__device__ glm::vec3 speed_limit(glm::vec3 vel, const Shoal::behaviourParamsStruct& behaviourParams)
+{
+	if (glm::length(vel) < behaviourParams.min_speed)
+		return behaviourParams.min_speed * glm::normalize(vel);
+	if (glm::length(vel) > behaviourParams.max_speed)
+		return behaviourParams.max_speed * glm::normalize(vel);
+
+	return vel;
+}
+
 
 __global__ void calculateGridKernel(const cudaArrays soa, float visibility_radius)
 {
