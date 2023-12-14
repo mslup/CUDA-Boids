@@ -14,13 +14,35 @@ public:
 
 	void run();
 	
-	constexpr static int N = 5000;
+	constexpr static int N = 10000;
 	
 	void updateCameraAngles(float xoffset, float yoffset);
 	void updateCameraZoom(float yoffset);
 	void updateCameraPos(int);
 
 private:
+	constexpr static float X = -LEFT_WALL;
+	constexpr static float Y = -DOWN_WALL;
+	constexpr static float Z = -BACK_WALL;
+
+	const float cubeVertices[3 * 8] = {
+		 X,  Y,  Z,
+		-X,  Y,  Z,
+		-X, -Y,  Z,
+		 X, -Y,  Z, 
+		 X,  Y, -Z,
+		-X,  Y, -Z,
+		-X, -Y, -Z,
+		 X, -Y, -Z
+	};
+
+	const unsigned int cubeIndices[4 * 4] = {
+		0, 1, 2, 3,
+		4, 5, 6, 7,
+		2, 3, 6, 7,
+		0, 1, 4, 5
+	};
+
 	Shoal* shoal;
 	Window* window;
 	VAO* vao;

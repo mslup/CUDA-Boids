@@ -25,12 +25,10 @@
 
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 800;
-constexpr float MIN_R = 0.02f;
-constexpr float MIN_GRID_R = 2 * MIN_R;
-constexpr float LEFT_WALL = -1;
-constexpr float DOWN_WALL = -1;
-constexpr float BACK_WALL = -1;
-constexpr float WORLD_WIDTH = 1 - LEFT_WALL;
+constexpr float LEFT_WALL = -2;
+constexpr float DOWN_WALL = -2;
+constexpr float BACK_WALL = -2;
+constexpr float WORLD_WIDTH = -2 * LEFT_WALL;
 
 //todo: move this to a different file
 struct cudaArrays {
@@ -56,5 +54,15 @@ struct cudaArrays {
 void callKernels(int blocks_per_grid, int max_threads,
 	double deltaTime, glm::mat4* models, Shoal*, cudaArrays
 	, float x, float y, float z);
+
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char* file, int line, bool abort = true)
+{
+	if (code != cudaSuccess)
+	{
+		fprintf(stderr, "GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+		if (abort) exit(code);
+	}
+}
 
 //#define CPU 

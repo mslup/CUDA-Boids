@@ -16,6 +16,8 @@ Window::Window(Application *parent)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 
+	glfwWindowHint(GLFW_SAMPLES, 4);
+
 	wndptr = glfwCreateWindow(width, height, "Shoal of fish", NULL, NULL);
 	if (wndptr == NULL)
 	{
@@ -33,6 +35,7 @@ Window::Window(Application *parent)
 
 	//glfwSetInputMode(wndptr, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+	//todo: you know what
 	glfwSetWindowUserPointer(wndptr, this);
 	glfwSetFramebufferSizeCallback(wndptr, 
 		[](GLFWwindow* window, int width, int height)
@@ -81,6 +84,8 @@ Window::Window(Application *parent)
 
 	ImGui_ImplGlfw_InitForOpenGL(wndptr, true);
 	ImGui_ImplOpenGL3_Init();
+
+	glEnable(GL_MULTISAMPLE);
 }
 
 
@@ -88,8 +93,6 @@ void Window::processInput()
 {
 	if (glfwGetKey(wndptr, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(wndptr, true);
-
-	//float cameraSpeed = static_cast<float>(2.5 * deltaTime);
 
 	int cameraPosKeys[6] = {
 		GLFW_KEY_W,

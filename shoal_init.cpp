@@ -2,19 +2,19 @@
 
 Shoal::Shoal()
 {
-	params.height = 0.04f ;
-	params.width = 0.02f  ;
+	renderParams.height = 0.04f;
+	renderParams.width = 0.02f;
 
 	float sqrt3 = glm::sqrt(3);
-	float a = params.width;
+	float a = renderParams.width;
+	float h = renderParams.height;
 
 	std::array<float, vertexCount> vertices = {
-		params.height,		0,				0,
-		0,			   -a / 2, -a * sqrt3 / 6,
-		0,				a / 2, -a * sqrt3 / 6,
-		0,					0,  a * sqrt3 / 3
+		h,		0,				0,
+		0, -a / 2, -a * sqrt3 / 6,
+		0,	a / 2, -a * sqrt3 / 6,
+		0, 		0,  a * sqrt3 / 3
 	};
-
 	std::array<float, vertexCount> indices = {
 		0, 1, 2,
 		0, 2, 3,
@@ -22,20 +22,22 @@ Shoal::Shoal()
 		1, 2, 3
 	};
 
-	std::copy(vertices.begin(), vertices.end(), params.vertices);
-	std::copy(indices.begin(), indices.end(), params.indices);
+	std::copy(vertices.begin(), vertices.end(), renderParams.vertices);
+	std::copy(indices.begin(), indices.end(),   renderParams.indices);
 
-	params.s = 1e-5;
-	params.a = 0.1;
-	params.c = 1e-3;
+	behaviourParams.sep_factor = (MAX_SEP_FACTOR - MIN_SEP_FACTOR) / 2;
+	behaviourParams.aln_factor = (MAX_ALN_FACTOR - MIN_ALN_FACTOR) / 2;
+	behaviourParams.coh_factor = (MAX_COH_FACTOR - MIN_COH_FACTOR) / 2;
 
-	params.margin = 0.2f;
-	params.turn = 5e-4;
+	behaviourParams.margin = 0.2f;
+	behaviourParams.turn_factor = 20;
 
-	params.max_speed = 0.9;
-	params.min_speed = 0.1;
+	behaviourParams.max_speed = 0.9;
+	behaviourParams.min_speed = 0.1;
 
-	params.visibility_radius = 0.1;//4.5f / 45;
+	behaviourParams.visibility_radius = 0.1;
+
+	assert(behaviourParams.visibility_radius >= MIN_R);
 
 	init_positions();
 	init_velocities();

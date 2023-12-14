@@ -3,9 +3,12 @@
 class VAO
 {
 public:
-	unsigned int VAO;
-	unsigned int vertexVBO;
-	unsigned int vertexEBO;
+	unsigned int boidVAO;
+	unsigned int boidVBO;
+	unsigned int boidEBO;
+	unsigned int cubeVAO;
+	unsigned int cubeVBO;
+	unsigned int cubeEBO;
 	unsigned int modelVBO;
 	struct cudaGraphicsResource* cudaVBO;
 
